@@ -105,6 +105,7 @@ public partial class MainWindow : Window
         _liveWindow = new LiveStateWindow(_liveState);
         _liveWindow.SourceInitialized += (_, _) => UseDarkTitleBar(_liveWindow);
 
+        SmoothProgress.Duration = new Duration(TimeSpan.FromMilliseconds(_config.ReadIntervalMs)); // timer bar glides between reads
         _readTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(_config.ReadIntervalMs), DispatcherPriority.Normal, (_, _) => Tick(), Dispatcher);
         _metricsTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(_config.MetricsIntervalMs), DispatcherPriority.Background, (_, _) => SampleMetrics(), Dispatcher);
         _soakTimer = new DispatcherTimer(TimeSpan.FromSeconds(_config.SoakIntervalSeconds), DispatcherPriority.Background, (_, _) => WriteSoak(), Dispatcher);
