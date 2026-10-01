@@ -18,7 +18,7 @@ public sealed class KeyRouter(ShortcutMap shortcuts)
     private bool _altDown;
     private bool _altUsedWithOtherKey;
 
-    public readonly record struct Decision(bool Swallow, (ShortcutAction Action, int Slot)? Action);
+    public readonly record struct Decision(bool Swallow, (ShortcutAction Action, int Slot)? Action, string? PassedBecause = null);
 
     private static readonly Decision PassThrough = new(false, null);
 
@@ -26,7 +26,8 @@ public sealed class KeyRouter(ShortcutMap shortcuts)
     /// <param name="isDown">Key down (true) or up (false).</param>
     /// <param name="modifiers">Ctrl/Alt/Shift currently held.</param>
     /// <param name="typing">A text field in the focused game has focus.</param>
-    public Decision OnKey(Key key, bool isDown, ModifierKeys modifiers, bool typing)
+    /// <param name="isRepeat">Windows reports the key was already down (auto-repeat while held).</param>
+    public Decision OnKey(Key key, bool isDown, ModifierKeys modifiers, bool typing, bool isRepeat = false)
     {
         if (key is Key.LeftAlt or Key.RightAlt)
         {
@@ -51,11 +52,12 @@ public sealed class KeyRouter(ShortcutMap shortcuts)
 
         if (typing && ShortcutMap.IsTypingSensitive(modifiers))
         {
-            return PassThrough; // "1" or Space typed into chat or the login form.
+            return new Decision(false, null, "typing"); // "1" or Space typed into chat or the login form.
         }
 
-        // Auto-repeat: the key is still held, already handled.
-        return _swallowedDown.Add(key) ? new Decision(true, binding) : new Decision(true, null);
+        // Auto-repeat comes from Windows' own flag, so a missed key release can never block a later, real press.
+        _swallowedDown.Add(key);
+        return isRepeat ? new Decision(true, null) : new Decision(true, binding);
     }
 
     /// <summary>Clears held-key tracking, e.g. when the app loses the foreground mid-press.</summary>

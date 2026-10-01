@@ -7,7 +7,8 @@ namespace Multibox.Hosting;
 /// Tells the host whether a text field (chat, login form) has focus in a slot's page, so plain-key shortcuts
 /// such as <c>1</c> or <c>Space</c> are not taken while the player is typing. ADR 0005.
 /// <para>
-/// Read-only page script (spec §7.1 option 2, hard rule 5): it listens for focus changes and posts one boolean.
+/// Read-only page script (spec §7.1 option 2, hard rule 5): it listens for focus changes, re-checks twice a second,
+/// and posts one boolean when it changes.
 /// It does not read game objects, call game functions, change the page or affect the game's own handling of input.
 /// </para>
 /// </summary>
@@ -16,13 +17,19 @@ public sealed class TypingWatcher
     public const string Script = """
         (() => {
           if (window.top !== window || !window.chrome || !window.chrome.webview) return;
+          let last = null;
           const report = () => {
             const el = document.activeElement;
-            const typing = !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable === true);
+            const typing = !!el && el.isConnected && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable === true);
+            if (typing === last) return;
+            last = typing;
             window.chrome.webview.postMessage({ mbx: 'typing', value: typing });
           };
           document.addEventListener('focusin', report, true);
           document.addEventListener('focusout', () => queueMicrotask(report), true);
+          // A focused text field that is removed from the page (e.g. chat closing) fires no focusout,
+          // so the state is also re-checked twice a second. Reads document.activeElement only.
+          setInterval(report, 500);
         })();
         """;
 

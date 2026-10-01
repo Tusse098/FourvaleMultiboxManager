@@ -52,6 +52,7 @@ public partial class MainWindow : Window
     private IntPtr _hwnd;
     private bool _fullscreen;
     private int? _focused;
+    private string? _lastPassNote;
     private bool _closing;
     private bool _restoring;
 
@@ -248,8 +249,22 @@ public partial class MainWindow : Window
 
         var key = KeyInterop.KeyFromVirtualKey(msg.wParam.ToInt32());
         var isDown = msg.message is WmKeyDown or WmSysKeyDown;
+        var isRepeat = isDown && (msg.lParam.ToInt64() & (1L << 30)) != 0; // bit 30: key was already down
         var typing = _focused is { } f && _open.TryGetValue(f, out var slot) && slot.Session.IsTyping;
-        var decision = _router.OnKey(key, isDown, CurrentModifiers(), typing);
+        var decision = _router.OnKey(key, isDown, CurrentModifiers(), typing, isRepeat);
+        if (decision.PassedBecause is { } reason && !isRepeat)
+        {
+            var note = $"shortcut key {key} passed to the game: slot {_focused} reports {reason}";
+            if (note != _lastPassNote)
+            {
+                _lastPassNote = note;
+                _log.Info(note);
+            }
+        }
+        else if (decision.Action is not null)
+        {
+            _lastPassNote = null;
+        }
         if (decision.Swallow)
         {
             handled = true;

@@ -25,8 +25,8 @@ public class KeyRouterTests
         var router = NewRouter();
 
         var first = router.OnKey(Key.Space, true, ModifierKeys.None, false);
-        var repeat1 = router.OnKey(Key.Space, true, ModifierKeys.None, false);
-        var repeat2 = router.OnKey(Key.Space, true, ModifierKeys.None, false);
+        var repeat1 = router.OnKey(Key.Space, true, ModifierKeys.None, false, isRepeat: true);
+        var repeat2 = router.OnKey(Key.Space, true, ModifierKeys.None, false, isRepeat: true);
         router.OnKey(Key.Space, false, ModifierKeys.None, false);
         var again = router.OnKey(Key.Space, true, ModifierKeys.None, false);
 
@@ -37,12 +37,26 @@ public class KeyRouterTests
     }
 
     [Fact]
+    public void Missed_key_release_does_not_block_the_next_press()
+    {
+        var router = NewRouter();
+
+        var first = router.OnKey(Key.D2, true, ModifierKeys.None, false);
+        // The release went to another window (e.g. during a fullscreen switch) and never arrived here.
+        var next = router.OnKey(Key.D2, true, ModifierKeys.None, false);
+
+        Assert.NotNull(first.Action);
+        Assert.NotNull(next.Action);
+        Assert.Equal(new KeyRouter.Decision(true, null), router.OnKey(Key.D2, false, ModifierKeys.None, false));
+    }
+
+    [Fact]
     public void Plain_shortcuts_pass_through_while_typing()
     {
         var router = NewRouter();
 
-        Assert.Equal(new KeyRouter.Decision(false, null), router.OnKey(Key.D1, true, ModifierKeys.None, typing: true));
-        Assert.Equal(new KeyRouter.Decision(false, null), router.OnKey(Key.Space, true, ModifierKeys.None, typing: true));
+        Assert.Equal(new KeyRouter.Decision(false, null, "typing"), router.OnKey(Key.D1, true, ModifierKeys.None, typing: true));
+        Assert.Equal(new KeyRouter.Decision(false, null, "typing"), router.OnKey(Key.Space, true, ModifierKeys.None, typing: true));
         Assert.Equal(new KeyRouter.Decision(false, null), router.OnKey(Key.D1, false, ModifierKeys.None, typing: true));
     }
 
