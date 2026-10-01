@@ -76,4 +76,14 @@ Passive observation of the network traffic each session already receives, throug
 
 Fourvale is in beta and this project tracks it. Current phase and open items: see the top of `CLAUDE.md`.
 
-This is an unofficial fan project and is not affiliated with Fourvale.
+## Disclaimer
+
+- **Unofficial.** This is a fan project. It is not affiliated with, endorsed by or supported by Fourvale or its developers.
+- **No cheating.** This project does not condone cheating, botting, automation or any other way of gaining an unfair advantage. It is built to help one player manually control their own accounts, and it deliberately leaves out anything that plays for you or sends input on your behalf.
+- **Follow Fourvale's rules.** You are responsible for following Fourvale's terms, rules and guidelines, and those of its community (for example its Discord). If Fourvale does not allow something this software does, or does not allow using several accounts, do not use it for that. Fourvale's rules always take precedence over this project.
+- **Use at your own risk.** You alone are responsible for how you use this software and for what happens to your accounts. The authors are not liable for any account action, ban, loss of progress or other consequence of using it. See the warranty and liability disclaimer in [LICENSE](LICENSE).
+- **If you modify it,** you are responsible for what your version does. Please keep it fair: do not add automation, input mirroring or anything that hides the tool from the game.
+
+## License
+
+[MIT](LICENSE): you may use, copy, modify and share this software freely, as long as the copyright notice is kept. It is provided "as is", without warranty of any kind.
