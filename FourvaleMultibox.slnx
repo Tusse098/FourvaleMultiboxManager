@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Fourvale.Adapter/Fourvale.Adapter.csproj" />
+    <Project Path="src/Multibox.App/Multibox.App.csproj" />
+    <Project Path="src/Multibox.Core/Multibox.Core.csproj" />
+    <Project Path="src/Multibox.Hosting/Multibox.Hosting.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Fourvale.Adapter.Tests/Fourvale.Adapter.Tests.csproj" />
+    <Project Path="tests/Fourvale.Capture.Tests/Fourvale.Capture.Tests.csproj" />
+    <Project Path="tests/Multibox.App.Tests/Multibox.App.Tests.csproj" />
+    <Project Path="tests/Multibox.Core.Tests/Multibox.Core.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Fourvale.Capture/Fourvale.Capture.csproj" />
+    <Project Path="tools/Fourvale.Replay/Fourvale.Replay.csproj" />
+  </Folder>
+</Solution>

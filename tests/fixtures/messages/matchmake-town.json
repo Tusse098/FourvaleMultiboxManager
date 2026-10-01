@@ -1,0 +1,29 @@
+{
+  "_fixture": {
+    "captured": "2026-10-01",
+    "fourvale": "client 0.98 Beta, bundle main-DZfOvN-x.js",
+    "source": "Fourvale.Capture, redacted at capture time, then sanitised (names -> PlayerNN, ids -> <ID_n>, tickets -> <TICKET>)",
+    "kind": "http",
+    "protocol": null,
+    "type": null,
+    "url": "https://api.fourvale.com/matchmake/joinOrCreate/town"
+  },
+  "payload": {
+    "room": {
+      "clients": 3,
+      "locked": false,
+      "private": false,
+      "maxClients": 50,
+      "unlisted": false,
+      "createdAt": "2026-10-01T13:08:00.698Z",
+      "name": "town",
+      "processId": "<ID_1>",
+      "mapId": "bellroot_a2",
+      "metadata": {
+        "mapId": "bellroot_a2"
+      },
+      "roomId": "<ID_2>"
+    },
+    "sessionId": "<ID_3>"
+  }
+}

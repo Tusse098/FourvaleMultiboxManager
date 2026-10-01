@@ -1,0 +1,70 @@
+<UserControl x:Class="Multibox.App.SlotPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- One slot: slim header (read from the state store) above its game view. The WebView2 is added from code.
+         Edge: invisible normally; blue = focused (gets the keyboard), gold = ready to act, red = problem.
+         The thickness never changes, so the game canvas is never resized by a status change. -->
+    <Border BorderThickness="2">
+        <Border.Style>
+            <Style TargetType="Border">
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                        <Setter Property="BorderBrush" Value="{StaticResource FocusBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsReady}" Value="True">
+                        <Setter Property="BorderBrush" Value="{StaticResource GoldBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsProblem}" Value="True">
+                        <Setter Property="BorderBrush" Value="{StaticResource ProblemBrush}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
+        <DockPanel>
+            <Grid x:Name="Header" DockPanel.Dock="Top" Height="22" Cursor="Hand" ToolTip="Click to focus this slot">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                <Setter Property="Background" Value="{StaticResource FocusHeaderBrush}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="{StaticResource GoldBrush}" Margin="10,0,8,0" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding Character}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border CornerRadius="6" Padding="6,0" Margin="0,0,8,0" Background="{StaticResource GoldBrush}"
+                            Visibility="{Binding IsReady, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="READY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BgBrush}" />
+                    </Border>
+                </StackPanel>
+                <TextBlock Grid.Column="3" Style="{StaticResource Hint}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap">
+                    <Run Text="{Binding Connection, Mode=OneWay}" /> · <Run Text="{Binding Health, Mode=OneWay}" /> · <Run Text="{Binding Status, Mode=OneWay}" />
+                </TextBlock>
+                <Button Grid.Column="4" Style="{StaticResource ChipButton}" Content="⟳" ToolTip="Reload this slot only"
+                        Command="{Binding Reload}" Padding="8,0" Margin="0,1,3,1" FontSize="11" />
+                <Button Grid.Column="5" Style="{StaticResource ChipButton}" Content="✕" ToolTip="Close this slot (logs it out of the game until you open it again)"
+                        Command="{Binding Close}" Padding="8,0" Margin="0,1,3,1" FontSize="11" />
+            </Grid>
+            <Grid Background="{StaticResource BgBrush}">
+                <TextBlock Text="{Binding Status}" Style="{StaticResource Hint}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <!-- The game renders at one fixed size for every slot (the large Focus tile); the Viewbox only scales the
+                     picture to this tile. The page never changes size when the layout changes, so swaps are instant. -->
+                <Viewbox Stretch="Uniform">
+                    <Grid x:Name="GameHost" />
+                </Viewbox>
+            </Grid>
+        </DockPanel>
+    </Border>
+</UserControl>

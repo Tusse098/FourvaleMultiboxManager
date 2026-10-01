@@ -1,0 +1,32 @@
+# Build output
+bin/
+obj/
+artifacts/
+*.binlog
+
+# IDEs and tools
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.DotSettings.user
+
+# Test output
+TestResults/
+coverage*/
+*.coverage
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Never commit game data: raw captures, logs and soak files live in %LocalAppData%\FourvaleMultibox\,
+# but guard against copies in the repo. Only sanitised fixtures under tests/fixtures/ may be committed
+# (see CLAUDE.md "Discovery and fixtures").
+*.jsonl
+!tests/fixtures/**/*.jsonl
+*.log
+soak-*.csv
+captures/

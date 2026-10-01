@@ -1,0 +1,30 @@
+{
+  "_fixture": {
+    "captured": "2026-10-01",
+    "fourvale": "client 0.98 Beta, bundle main-DZfOvN-x.js",
+    "source": "Fourvale.Capture, redacted at capture time, then sanitised (names -> PlayerNN, ids -> <ID_n>, tickets -> <TICKET>)",
+    "kind": "ws",
+    "protocol": "ROOM_DATA",
+    "type": "damage",
+    "url": null
+  },
+  "payload": {
+    "sourceId": "<ID_6>",
+    "targetId": "enemy_1",
+    "amount": 6,
+    "kind": "damage",
+    "crit": false,
+    "killed": false,
+    "element": "physical",
+    "resource": null,
+    "skill": false,
+    "fx": "atkfx_3",
+    "motion": "punch",
+    "proj": null,
+    "snd": 137,
+    "bodyAnim": null,
+    "projPath": null,
+    "muzzle": null,
+    "aim": null
+  }
+}

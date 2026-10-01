@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Phase 1 developer tool: hosts one Fourvale session and records sanitised network traffic.
+       Not part of the shipped app. See docs/decisions/0001-phase1-capture-tool.md. -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyTitle>Fourvale Capture</AssemblyTitle>
+    <!-- WPF0001: Application.ThemeMode (Fluent dark theme) is marked experimental. -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Multibox.Hosting\Multibox.Hosting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="capture-rules.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Fourvale.Capture.Tests" />
+  </ItemGroup>
+
+</Project>

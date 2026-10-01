@@ -1,0 +1,16 @@
+{
+  "_fixture": {
+    "captured": "2026-10-01",
+    "fourvale": "client 0.98 Beta, bundle main-DZfOvN-x.js",
+    "source": "Fourvale.Capture, redacted at capture time, then sanitised (names -> PlayerNN, ids -> <ID_n>, tickets -> <TICKET>)",
+    "kind": "ws",
+    "protocol": "ROOM_DATA",
+    "type": "consumables",
+    "url": null
+  },
+  "payload": {
+    "Miracle": 30,
+    "Skill Roar": 36,
+    "Skill Chant": 14
+  }
+}

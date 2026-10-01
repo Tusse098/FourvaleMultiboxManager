@@ -1,0 +1,26 @@
+{
+  "_fixture": {
+    "captured": "2026-10-01",
+    "fourvale": "client 0.98 Beta, bundle main-DZfOvN-x.js",
+    "source": "Fourvale.Capture, redacted at capture time, then sanitised (names -> PlayerNN, ids -> <ID_n>, tickets -> <TICKET>)",
+    "kind": "http",
+    "protocol": null,
+    "type": null,
+    "url": "https://api.fourvale.com/matchmake/joinOrCreate/battle"
+  },
+  "payload": {
+    "room": {
+      "clients": 3,
+      "locked": false,
+      "private": false,
+      "maxClients": 5,
+      "unlisted": false,
+      "createdAt": "2026-10-01T13:08:12.685Z",
+      "name": "battle",
+      "processId": "<ID_1>",
+      "battleKey": "<TICKET>",
+      "roomId": "<ID_4>"
+    },
+    "sessionId": "<ID_5>"
+  }
+}

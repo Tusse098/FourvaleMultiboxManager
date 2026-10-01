@@ -1,0 +1,31 @@
+{
+  "gameUrl": "https://fourvale.com/",
+
+  "slotCount": 5,
+  "defaultSlots": [ 1, 2, 3 ],
+  "browserArguments": "--disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows",
+
+  "readIntervalMs": 250,
+  "metricsIntervalMs": 2000,
+  "soakIntervalSeconds": 60,
+
+  "shortcuts": {
+    "focusSlot": "{n}",
+    "nextSlot": "Alt",
+    "previousSlot": "",
+    "nextReady": "Space",
+    "toggleFullscreen": "Alt+Enter"
+  },
+  "gameAspect": 1.7777778,
+  "focusTileShare": 0.3,
+  "focusSwapDelayMs": 0,
+
+  "noticeSeconds": 2.5,
+  "overlayOpacity": 0.82,
+
+  "freshness": {
+    "default": "00:00:05",
+    "room-state": "00:00:05",
+    "hpSync": "00:10:00"
+  }
+}

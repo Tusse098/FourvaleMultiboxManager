@@ -1,0 +1,65 @@
+<UserControl x:Class="Fourvale.Capture.Ui.SlotPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- One slot's game view with a slim header. The WebView2 control is added to GameHost from code. -->
+    <Border x:Name="Frame" BorderThickness="2" Margin="2">
+        <Border.Style>
+            <Style TargetType="Border">
+                <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsActive}" Value="True">
+                        <Setter Property="BorderBrush" Value="{StaticResource GoldBrush}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
+        <DockPanel>
+            <Grid x:Name="Header" DockPanel.Dock="Top" Height="30" Background="{StaticResource PanelBrush}" Cursor="Hand"
+                  ToolTip="Click to make this the active slot (markers and stats follow the active slot)">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Ellipse Width="9" Height="9" Margin="10,0,8,0" VerticalAlignment="Center">
+                    <Ellipse.Style>
+                        <Style TargetType="Ellipse">
+                            <Setter Property="Fill" Value="{StaticResource MutedBrush}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsRecording}" Value="True">
+                                    <Setter Property="Fill" Value="{StaticResource RecordBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Ellipse.Style>
+                </Ellipse>
+                <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource GoldBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Grid.Column="2" Text="{Binding GameStatus}" Margin="10,0,0,0" FontSize="12"
+                           Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <Button Grid.Column="3" Style="{StaticResource HeaderButton}" Content="⟳" ToolTip="Reload this slot"
+                        Command="{Binding DataContext.ReloadSlotCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        CommandParameter="{Binding}" />
+                <Button Grid.Column="4" Style="{StaticResource HeaderButton}" Content="✕" ToolTip="Close this slot (locked while recording)"
+                        Command="{Binding DataContext.CloseSlotCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        CommandParameter="{Binding}" Margin="0,0,4,0" />
+            </Grid>
+            <Grid x:Name="GameHost" Background="{StaticResource BgBrush}">
+                <TextBlock Text="{Binding GameStatus}" Foreground="{StaticResource MutedBrush}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Grid>
+        </DockPanel>
+    </Border>
+</UserControl>

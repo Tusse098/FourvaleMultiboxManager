@@ -1,0 +1,401 @@
+<Window x:Class="Fourvale.Capture.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding WindowTitle, FallbackValue='Fourvale Capture'}"
+        Width="1400" Height="840" MinWidth="1000" MinHeight="640"
+        WindowStartupLocation="CenterScreen" WindowState="Maximized"
+        Background="{StaticResource BgBrush}"
+        Foreground="{StaticResource TextBrush}">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="360" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Game area: one SlotPanel per open slot, arranged by the selected layout (code-behind). -->
+        <Grid Grid.Column="0" Background="{StaticResource BgBrush}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="Fourvale" FontSize="34" FontWeight="SemiBold" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Center" />
+                <TextBlock Text="Pick a slot on the right to open a game." Margin="0,8,0,0" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" />
+            </StackPanel>
+            <Grid x:Name="PanelHost" />
+        </Grid>
+
+        <!-- Sidebar -->
+        <Border Grid.Column="1" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1,0,0,0">
+            <Grid Margin="18,14,18,12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Title -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                    <TextBlock Text="Fourvale Capture" FontSize="19" FontWeight="SemiBold" />
+                    <TextBlock Text="Play normally. Start records what the game sends and receives." Style="{StaticResource Hint}" Margin="0,2,0,0" />
+                </StackPanel>
+
+                <!-- Slots and layout -->
+                <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                    <TextBlock Text="ACCOUNT SLOTS" Style="{StaticResource SectionHeader}"
+                               ToolTip="Click a number to open that slot. Each slot has its own login and runs at the same time as the others." />
+                    <ItemsControl ItemsSource="{Binding Slots}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource SlotButton}" Content="{Binding Number}" ToolTip="{Binding Name}"
+                                        Command="{Binding DataContext.SlotPillCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,10" FontSize="11.5"
+                               Text="Gold = active, outlined = open, grey = closed. Close a slot with ✕ on its panel." />
+
+                    <TextBlock Text="LAYOUT" Style="{StaticResource SectionHeader}" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Focus" CommandParameter="Focus" Command="{Binding SetLayoutCommand}"
+                                ToolTip="The active slot large, the others as small live views below it. Every slot keeps running.">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource ChipButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsFocusLayout}" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource GoldBrush}" />
+                                            <Setter Property="Foreground" Value="{StaticResource BgBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="Side by side" CommandParameter="SideBySide" Command="{Binding SetLayoutCommand}"
+                                ToolTip="All open slots in one row.">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource ChipButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSideBySideLayout}" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource GoldBrush}" />
+                                            <Setter Property="Foreground" Value="{StaticResource BgBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="Grid" CommandParameter="Grid" Command="{Binding SetLayoutCommand}"
+                                ToolTip="All open slots in a grid (2 = side by side, 3-4 = 2x2, 5 = 3x2).">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource ChipButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsGridLayout}" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource GoldBrush}" />
+                                            <Setter Property="Foreground" Value="{StaticResource BgBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Recording card -->
+                <Border Grid.Row="2" Background="{StaticResource CardBrush}" CornerRadius="12" Padding="14" Margin="0,0,0,12">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Ellipse x:Name="RecordDot" Width="11" Height="11" VerticalAlignment="Center" Margin="0,0,9,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource MutedBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsRecording}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource RecordBrush}" />
+                                                <DataTrigger.EnterActions>
+                                                    <BeginStoryboard x:Name="Pulse">
+                                                        <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1" To="0.25" Duration="0:0:0.8" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.EnterActions>
+                                                <DataTrigger.ExitActions>
+                                                    <StopStoryboard BeginStoryboardName="Pulse" />
+                                                </DataTrigger.ExitActions>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                            <TextBlock Grid.Column="1" Text="{Binding StatusTitle}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="{Binding ActiveSlot.Elapsed}" FontFamily="Consolas" FontSize="18" VerticalAlignment="Center" />
+                        </Grid>
+                        <TextBlock Text="{Binding ActiveSlot.FileText}" Style="{StaticResource Hint}" Margin="0,6,0,0" />
+                        <TextBlock Text="{Binding ActiveSlot.SavedSize}" Style="{StaticResource Hint}" Margin="0,2,0,0"
+                                   Visibility="{Binding ActiveSlot.IsRecording, Converter={StaticResource BoolToVisibility}}" />
+
+                        <Button Style="{StaticResource RecordButton}" Content="{Binding StartStopText}"
+                                Command="{Binding StartStopCommand}" Margin="0,12,0,8" />
+
+                        <CheckBox IsChecked="{Binding ReloadOnStart}" Focusable="False" IsEnabled="{Binding CanChangeSlots}" MinHeight="0"
+                                  ToolTip="Reloading when you press Start records the room join, which describes the game's data layout.">
+                            <TextBlock Text="Reload game on start (records the full join)" FontSize="12.5" />
+                        </CheckBox>
+                    </StackPanel>
+                </Border>
+
+                <!-- Counters -->
+                <StackPanel Grid.Row="3" Margin="0,0,0,12">
+                    <TextBlock Style="{StaticResource SectionHeader}">
+                        <Run Text="ACTIVE SLOT:" /> <Run Text="{Binding ActiveSlot.Name, Mode=OneWay}" Foreground="{StaticResource GoldBrush}" />
+                    </TextBlock>
+                    <UniformGrid Columns="3">
+                        <UniformGrid.Resources>
+                            <Style x:Key="StatValue" TargetType="TextBlock">
+                                <Setter Property="FontSize" Value="19" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Style>
+                        </UniformGrid.Resources>
+                        <StackPanel ToolTip="WebSocket frames from the server">
+                            <TextBlock Text="{Binding ActiveSlot.Received, StringFormat=N0}" Style="{StaticResource StatValue}" Foreground="{StaticResource InBrush}" />
+                            <TextBlock Text="received" Style="{StaticResource Hint}" />
+                        </StackPanel>
+                        <StackPanel ToolTip="WebSocket frames sent by the game client">
+                            <TextBlock Text="{Binding ActiveSlot.Sent, StringFormat=N0}" Style="{StaticResource StatValue}" Foreground="{StaticResource GoldBrush}" />
+                            <TextBlock Text="sent" Style="{StaticResource Hint}" />
+                        </StackPanel>
+                        <StackPanel ToolTip="API responses">
+                            <TextBlock Text="{Binding ActiveSlot.Http, StringFormat=N0}" Style="{StaticResource StatValue}" Foreground="{StaticResource HttpBrush}" />
+                            <TextBlock Text="http" Style="{StaticResource Hint}" />
+                        </StackPanel>
+                    </UniformGrid>
+                    <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
+                               ToolTip="Redacted: tokens, e-mails and chat text replaced before saving. Dropped: login traffic never saved. Undecoded: saved by size only.">
+                        <Run Text="{Binding ActiveSlot.Redacted, StringFormat=N0, Mode=OneWay}" /> redacted ·
+                        <Run Text="{Binding ActiveSlot.Dropped, StringFormat=N0, Mode=OneWay}" /> dropped ·
+                        <Run Text="{Binding ActiveSlot.Undecoded, StringFormat=N0, Mode=OneWay}" /> undecoded
+                    </TextBlock>
+                </StackPanel>
+
+                <!-- Markers -->
+                <StackPanel Grid.Row="4" Margin="0,0,0,12">
+                    <TextBlock Text="MARK A MOMENT" Style="{StaticResource SectionHeader}"
+                               ToolTip="Click when something happens in the game. It helps match messages to what you saw." />
+                    <ItemsControl ItemsSource="{Binding MarkerPresets}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource ChipButton}" Content="{Binding}"
+                                        Command="{Binding DataContext.AddMarkerCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Grid Margin="0,2,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="NoteBox" Text="{Binding NoteText, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding ActiveSlot.IsRecording}" VerticalContentAlignment="Center">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Enter" Command="{Binding AddNoteCommand}" />
+                            </TextBox.InputBindings>
+                        </TextBox>
+                        <TextBlock Text="Your own note, then Enter" IsHitTestVisible="False" Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Hint}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding NoteText}" Value="">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <Button Grid.Column="1" Style="{StaticResource ChipButton}" Content="Add" Margin="8,0,0,0"
+                                Command="{Binding AddNoteCommand}" />
+                    </Grid>
+                    <TextBlock Text="{Binding LastMarker}" Foreground="{StaticResource GoldBrush}" FontSize="12" Margin="0,6,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding LastMarker}" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+
+                <!-- Decoded state / message types -->
+                <DockPanel Grid.Row="5" Margin="0,0,0,10">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+                        <Button Content="Decoded state" Command="{Binding ShowDecodedCommand}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource ChipButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ShowDecoded}" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource GoldBrush}" />
+                                            <Setter Property="Foreground" Value="{StaticResource BgBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="Messages" Command="{Binding ShowMessagesCommand}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource ChipButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ShowMessages}" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource GoldBrush}" />
+                                            <Setter Property="Foreground" Value="{StaticResource BgBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+
+                    <Grid>
+                    <Border Background="{StaticResource CardBrush}" CornerRadius="10" Padding="12,8"
+                            Visibility="{Binding ShowDecoded, Converter={StaticResource BoolToVisibility}}"
+                            ToolTip="Read live from the room state of the active slot (debug view). UNKNOWN = not available right now.">
+                        <DockPanel>
+                            <Grid DockPanel.Dock="Top">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Room" Style="{StaticResource Hint}" Margin="0,3,10,3" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ActiveSlot.RoomText}" Margin="0,3" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Row="1" Text="Class" Style="{StaticResource Hint}" Margin="0,3,10,3" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ActiveSlot.ClassText}" Margin="0,3" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Row="2" Text="Level" Style="{StaticResource Hint}" Margin="0,3,10,3" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ActiveSlot.LevelText}" Margin="0,3" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Row="3" Text="HP" Style="{StaticResource Hint}" Margin="0,3,10,3" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ActiveSlot.HpText}" Margin="0,3,0,9" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Row="4" Text="SP" Style="{StaticResource Hint}" Margin="0,3,10,3" />
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ActiveSlot.SpText}" Margin="0,3,0,9" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Row="5" Text="Action" Style="{StaticResource Hint}" Margin="0,3,10,3" />
+                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding ActiveSlot.MeterText}" Margin="0,3,0,9" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{Binding ActiveSlot.IsReadyToAct, Converter={StaticResource ReadyBrush}}" />
+                                    <TextBlock Grid.Row="6" Text="In battle" Style="{StaticResource Hint}" Margin="0,3,10,3" />
+                                    <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding ActiveSlot.BattleText}" Margin="0,3" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <Border Grid.Row="3" Grid.Column="1" Height="5" CornerRadius="2.5" Background="{StaticResource LineBrush}"
+                                            VerticalAlignment="Bottom" Margin="0,0,0,0"
+                                            Visibility="{Binding ActiveSlot.HasHpBar, Converter={StaticResource BoolToVisibility}}">
+                                        <ProgressBar Minimum="0" Maximum="1" Value="{Binding ActiveSlot.HpFraction, Mode=OneWay}" Height="5"
+                                                     Foreground="{StaticResource InBrush}" Background="Transparent" BorderThickness="0" />
+                                    </Border>
+                                    <Border Grid.Row="4" Grid.Column="1" Height="5" CornerRadius="2.5" Background="{StaticResource LineBrush}"
+                                            VerticalAlignment="Bottom" Margin="0,0,0,0"
+                                            Visibility="{Binding ActiveSlot.HasSpBar, Converter={StaticResource BoolToVisibility}}">
+                                        <ProgressBar Minimum="0" Maximum="1" Value="{Binding ActiveSlot.SpFraction, Mode=OneWay}" Height="5"
+                                                     Foreground="{StaticResource HttpBrush}" Background="Transparent" BorderThickness="0" />
+                                    </Border>
+                                    <Border Grid.Row="5" Grid.Column="1" Height="5" CornerRadius="2.5" Background="{StaticResource LineBrush}"
+                                            VerticalAlignment="Bottom" Margin="0,0,0,0"
+                                            Visibility="{Binding ActiveSlot.HasMeter, Converter={StaticResource BoolToVisibility}}">
+                                        <ProgressBar Minimum="0" Maximum="1" Value="{Binding ActiveSlot.MeterFraction, Mode=OneWay}" Height="5"
+                                                     Foreground="{StaticResource GoldBrush}" Background="Transparent" BorderThickness="0" />
+                                    </Border>
+                            </Grid>
+                            <TextBlock DockPanel.Dock="Top" Text="{Binding ActiveSlot.DecodeText}" Style="{StaticResource Hint}" FontSize="11" Margin="0,6,0,6" />
+                            <TextBlock DockPanel.Dock="Top" Text="ROOM STATE" Style="{StaticResource SectionHeader}" Margin="0,2,0,4" />
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Focusable="False">
+                                <TextBlock Text="{Binding ActiveSlot.StateJson}" FontFamily="Consolas" FontSize="11"
+                                           Foreground="{StaticResource MutedBrush}" />
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Background="{StaticResource CardBrush}" CornerRadius="10" Padding="4"
+                            Visibility="{Binding ShowMessages, Converter={StaticResource BoolToVisibility}}">
+                        <Grid>
+                            <TextBlock Text="Messages appear here as you play."
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" Margin="12">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource Hint}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ActiveSlot.MessageTypes.Count}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                                <ItemsControl ItemsSource="{Binding ActiveSlot.MessageTypes}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="8,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="20" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="Glyph" Text="{Binding Glyph}" FontWeight="Bold" Foreground="{StaticResource MutedBrush}" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Label}" FontFamily="Consolas" FontSize="12.5"
+                                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding Label}" />
+                                                <TextBlock Grid.Column="2" Text="{Binding Count, StringFormat=N0}" FontFamily="Consolas" FontSize="12.5"
+                                                           Foreground="{StaticResource MutedBrush}" Margin="8,0,0,0" />
+                                            </Grid>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Glyph}" Value="↓">
+                                                    <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource InBrush}" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Glyph}" Value="↑">
+                                                    <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource GoldBrush}" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Glyph}" Value="⇅">
+                                                    <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource HttpBrush}" />
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                    </Grid>
+                </DockPanel>
+
+                <!-- Footer -->
+                <StackPanel Grid.Row="6">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <Button Style="{StaticResource ChipButton}" Content="Open captures folder" Command="{Binding OpenFolderCommand}" />
+                        <Button Style="{StaticResource ChipButton}" Content="Reload active slot" Command="{Binding ReloadCommand}" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Hint}" FontSize="11"
+                               Text="Passwords, tokens and login traffic are never saved. Chat is redacted. Captures stay on this PC." 
+                               ToolTip="Captures may still contain other players' names and session ids. Sanitise before committing anything as a test fixture." />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
