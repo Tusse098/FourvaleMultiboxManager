@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -53,6 +54,7 @@ public partial class MainWindow : Window
     private bool _fullscreen;
     private int? _focused;
     private string? _lastPassNote;
+    private DateTimeOffset _lastRead = DateTimeOffset.UtcNow;
     private bool _closing;
     private bool _restoring;
 
@@ -103,7 +105,7 @@ public partial class MainWindow : Window
         _liveWindow = new LiveStateWindow(_liveState);
         _liveWindow.SourceInitialized += (_, _) => UseDarkTitleBar(_liveWindow);
 
-        _readTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(_config.ReadIntervalMs), DispatcherPriority.Background, (_, _) => Tick(), Dispatcher);
+        _readTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(_config.ReadIntervalMs), DispatcherPriority.Normal, (_, _) => Tick(), Dispatcher);
         _metricsTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(_config.MetricsIntervalMs), DispatcherPriority.Background, (_, _) => SampleMetrics(), Dispatcher);
         _soakTimer = new DispatcherTimer(TimeSpan.FromSeconds(_config.SoakIntervalSeconds), DispatcherPriority.Background, (_, _) => WriteSoak(), Dispatcher);
         _noticeTimer = new DispatcherTimer(TimeSpan.FromSeconds(_config.NoticeSeconds), DispatcherPriority.Background, (_, _) => ClearNotice(), Dispatcher);
@@ -305,8 +307,19 @@ public partial class MainWindow : Window
 
             case ShortcutAction.NextReady:
                 // Whoever acts next: a READY character (cycling through them), otherwise the lowest timer.
+                // Read every slot first: the read tick can lag behind (e.g. while attack animations keep the UI busy),
+                // and a slot that just attacked must not still count as READY.
                 var now = DateTimeOffset.UtcNow;
-                var next = SlotNavigator.NextToAct(OpenIds(), Focused(), id => SlotNavigator.SecondsUntilReady(_store.Get(id), _freshness, now));
+                var sinceRead = now - _lastRead;
+                foreach (var open in _open.Values)
+                {
+                    open.Session.Read(now);
+                }
+
+                var timers = OpenIds().ToDictionary(id => id, id => SlotNavigator.SecondsUntilReady(_store.Get(id), _freshness, now));
+                var next = SlotNavigator.NextToAct(OpenIds(), Focused(), id => timers[id]);
+                _log.Info(string.Create(CultureInfo.InvariantCulture,
+                    $"next to act -> {next?.ToString() ?? "none"} ({string.Join(", ", timers.Select(t => $"{t.Key} {(t.Value is { } v ? $"{v:0.0}s" : "-")}"))}; last read {sinceRead.TotalMilliseconds:0} ms before)"));
                 if (next is { } target)
                 {
                     FocusSlot(target.Number);
@@ -646,6 +659,7 @@ public partial class MainWindow : Window
     private void Tick()
     {
         var now = DateTimeOffset.UtcNow;
+        _lastRead = now;
         foreach (var slot in _open.Values)
         {
             slot.Session.Read(now);
