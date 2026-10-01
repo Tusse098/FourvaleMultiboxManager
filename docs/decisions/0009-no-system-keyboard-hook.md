@@ -22,3 +22,12 @@ The hook was removed. Keys are read from the app's own message loop instead:
 - Shortcuts only work while the Multibox window has the keyboard, as before.
 - **Not verified with real key presses yet.** Synthetic test input was also flagged by the antivirus, so testing stopped. The player verifies with real key presses.
 - The capture tool never used a hook. No project code calls `SetWindowsHookEx` any more.
+
+## Update 2026-10-01: shortcuts stuck after a fullscreen switch
+
+In live play, every shortcut stopped working after toggling fullscreen. Two weak points were fixed:
+
+- **Key repeat** is now read from Windows' previous-key-state flag (lParam bit 30) instead of "is this key still in the held set". A key release that never reached the app can no longer turn every later press into an ignored "repeat".
+- **Typing detection** also re-checks `document.activeElement` twice a second and posts only on change. A focused text field removed from the page fires no `focusout`, which could leave the slot marked "typing" forever, so plain keys went to the game. The script stays read-only.
+
+When a shortcut key is passed to the game because the slot reports typing, the log says so once (`shortcut key ... passed to the game: slot N reports typing`).
