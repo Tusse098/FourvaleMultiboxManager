@@ -81,6 +81,12 @@ Method: capture tool with the live **Decoded state** view (player reports it "wo
 | L3 | **Battle `phase`** changes to `"won"` at the end of a battle (21 times). Other phase values were not seen in patches. | Medium |
 | L4 | All socket closes in capture 3 were again client-initiated room changes. | High |
 
+### 2026-10-01 — Action timing (re-analysis of capture `2026-10-01_15-07-51`, slots 1–3)
+
+- After a slot sends `action` (`{type: 'attack', targetId}`), its own `actionMeter` drops to 0 in the next patch, **50–110 ms** later (all 49 attacks in the 14:15 and 14:40 captures).
+- In a party battle every member's meter then **stops for about 2 s** (attack animation): no meter patches, values unchanged, then they resume. The overlay timers pause with them.
+- So a "Space doesn't switch yet" delay after attacking is not in the game data; it was the app's read tick lagging (fixed: Space reads all slots before deciding, ADR 0009 update).
+
 ## Spec §17 questions
 
 | # | Question | Answer (2026-10-01) | Confidence |
