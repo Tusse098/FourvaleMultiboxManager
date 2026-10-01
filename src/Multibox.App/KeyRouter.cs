@@ -3,7 +3,7 @@ using System.Windows.Input;
 namespace Multibox.App;
 
 /// <summary>
-/// Decides, for each physical key event while the app is in the foreground, whether it is an app shortcut
+/// Decides, for each key event in the app window (WPF Preview key events), whether it is an app shortcut
 /// (swallowed, never reaches the game) or a game key (passed through untouched). Pure logic, unit-tested.
 /// <list type="bullet">
 /// <item>One physical press triggers at most one action: auto-repeat is swallowed without acting.</item>

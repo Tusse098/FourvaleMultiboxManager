@@ -64,7 +64,7 @@ Data flows one way: **WebView2 session → adapter → state store → UI**. The
 
 ## How it reads the game
 
-Passive observation of the network traffic each session already receives, through the Chrome DevTools Protocol in WebView2. Fourvale uses Colyseus; room state is decoded with a small schema v2 decoder (`src/Fourvale.Adapter/Colyseus`). Request headers and bodies are never read, and login traffic is dropped, so passwords and tokens never reach the app. Two tiny read-only page scripts report only whether a text field has focus. See `docs/discovery.md` and `docs/decisions/`.
+Passive observation of the network traffic each session already receives, through the Chrome DevTools Protocol in WebView2. Fourvale uses Colyseus; room state is decoded with a small schema v2 decoder (`src/Fourvale.Adapter/Colyseus`). Request headers and bodies are never read, and login traffic is dropped, so passwords and tokens never reach the app. A tiny read-only page script reports only whether a text field has focus. Shortcuts are read from the app's own message loop; there is no system-wide keyboard hook. See `docs/discovery.md` and `docs/decisions/`.
 
 ## Play policy
 
