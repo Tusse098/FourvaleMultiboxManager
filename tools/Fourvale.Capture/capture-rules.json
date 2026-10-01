@@ -1,0 +1,18 @@
+{
+  "gameUrl": "https://fourvale.com/",
+  "slotCount": 5,
+  "markerPresets": [
+    "Combat start",
+    "Combat end",
+    "Took damage",
+    "Healed",
+    "Level up",
+    "Zone change",
+    "Went idle",
+    "Inventory change",
+    "Disconnected"
+  ],
+  "messageTypeListSize": 40,
+  "browserArguments": "--disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows",
+  "focusStripShare": 0.25
+}

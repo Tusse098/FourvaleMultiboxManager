@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The only project with Fourvale-specific knowledge (CLAUDE.md). See ADR 0002 and 0003. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Multibox.Core\Multibox.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Copied to every executable that references the adapter, so all of them share one rule set. -->
+    <None Update="fourvale-adapter.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Fourvale.Adapter.Tests" />
+  </ItemGroup>
+
+</Project>

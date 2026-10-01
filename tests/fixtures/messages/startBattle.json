@@ -1,0 +1,35 @@
+{
+  "_fixture": {
+    "captured": "2026-10-01",
+    "fourvale": "client 0.98 Beta, bundle main-DZfOvN-x.js",
+    "source": "Fourvale.Capture, redacted at capture time, then sanitised (names -> PlayerNN, ids -> <ID_n>, tickets -> <TICKET>)",
+    "kind": "ws",
+    "protocol": "ROOM_DATA",
+    "type": "startBattle",
+    "url": null
+  },
+  "payload": {
+    "nodeId": "bellroot_a2_dgn_b2",
+    "enemyDefId": "spider",
+    "tier": 1,
+    "enemies": [
+      {
+        "name": "Spider",
+        "hp": 27,
+        "n": 1,
+        "base": "spider",
+        "type": "att"
+      },
+      {
+        "name": "Agloolik",
+        "hp": 29,
+        "n": 1,
+        "base": "wolf",
+        "type": "mag"
+      }
+    ],
+    "xp": 12,
+    "silver": 6,
+    "ticket": "<TICKET>"
+  }
+}

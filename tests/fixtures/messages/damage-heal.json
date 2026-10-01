@@ -1,0 +1,30 @@
+{
+  "_fixture": {
+    "captured": "2026-10-01",
+    "fourvale": "client 0.98 Beta, bundle main-DZfOvN-x.js",
+    "source": "Fourvale.Capture, redacted at capture time, then sanitised (names -> PlayerNN, ids -> <ID_n>, tickets -> <TICKET>)",
+    "kind": "ws",
+    "protocol": "ROOM_DATA",
+    "type": "damage",
+    "url": null
+  },
+  "payload": {
+    "sourceId": "<ID_7>",
+    "targetId": "<ID_7>",
+    "amount": 1,
+    "kind": "heal",
+    "crit": false,
+    "killed": false,
+    "element": "heal",
+    "resource": null,
+    "skill": true,
+    "fx": "atkfx_8",
+    "motion": "cast",
+    "proj": null,
+    "snd": 137,
+    "bodyAnim": null,
+    "projPath": null,
+    "muzzle": null,
+    "aim": null
+  }
+}

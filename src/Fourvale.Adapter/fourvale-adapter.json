@@ -1,0 +1,31 @@
+{
+  "apiHosts": [
+    "api.fourvale.com"
+  ],
+  "bundleHosts": [
+    "fourvale.com"
+  ],
+  "dropBodyPathPrefixes": [
+    "/api/login",
+    "/api/logout",
+    "/api/register",
+    "/api/trial",
+    "/api/2fa",
+    "/api/password"
+  ],
+  "dropBodyPathPattern": "(?i)(login|logout|register|signin|signup|auth|token|password|2fa|otp)",
+  "redactKeyPattern": "(?i)^(.*token|jwt|bearer|.*password|passwd|pwd|.*secret|auth|authorization|cookie|set-cookie|e-?mail|apikey|api_key|challenge|otp|twofa.*|2fa.*)$",
+  "chatMessageTypePattern": "(?i)(chat|whisper|pm$)",
+  "chatRedactKeys": [
+    "text",
+    "message",
+    "msg",
+    "body",
+    "from",
+    "to",
+    "toSession",
+    "sender",
+    "recipient",
+    "name"
+  ]
+}

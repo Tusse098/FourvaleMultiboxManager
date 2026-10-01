@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Discovery tool: replays a Fourvale.Capture file through the schema decoder. Not shipped. See ADR 0002. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Fourvale.Adapter\Fourvale.Adapter.csproj" />
+  </ItemGroup>
+
+</Project>
