@@ -49,7 +49,6 @@ public partial class MainWindow : Window
     private readonly OverlayWindow _overlayWindow;
     private OverlaySettings _overlaySettings = new();
     private SettingsWindow? _settingsWindow;
-    private KeyboardHook? _hook;
     private IntPtr _hwnd;
     private bool _fullscreen;
     private int? _focused;
@@ -115,6 +114,7 @@ public partial class MainWindow : Window
             HwndSource.FromHwnd(_hwnd)?.AddHook(SuppressAltMenu);
         };
         Deactivated += (_, _) => _router.Reset();
+        ComponentDispatcher.ThreadPreprocessMessage += OnThreadMessage;
         PanelHost.SizeChanged += (_, _) => ArrangePanels();
         Loaded += OnLoaded;
         Closing += OnClosing;
@@ -133,7 +133,6 @@ public partial class MainWindow : Window
         _readTimer.Start();
         _metricsTimer.Start();
         _soakTimer.Start();
-        _hook = new KeyboardHook(OnHookKey);
 
         // One after another: the first creates the shared browser process, the rest join it.
         _restoring = true;
@@ -227,24 +226,39 @@ public partial class MainWindow : Window
     private static string Help(string keys, string what) => keys.Length == 0 ? "" : $"{keys}: {what}";
 
     /// <summary>
-    /// Every physical key press while this window is in the foreground. App shortcuts are swallowed (the game never
-    /// sees them); everything else goes to the game untouched. Runs on the UI thread and must return quickly.
+    /// Every keyboard message for this window and its child windows, before anything handles it. Each game view's
+    /// keyboard focus is a child window of this process (WebView2's input window), so its keys never raise WPF key
+    /// events; they do pass through this thread's message loop, which <see cref="ComponentDispatcher"/> exposes.
+    /// App shortcuts are marked handled (the game never sees them); everything else goes on untouched.
+    /// In-process only: no system-wide keyboard hook (ADR 0009).
     /// </summary>
-    private bool OnHookKey(Key key, bool isDown)
+    private void OnThreadMessage(ref MSG msg, ref bool handled)
     {
-        if (_closing || _hwnd == IntPtr.Zero || GetForegroundWindow() != _hwnd)
+        const int WmKeyDown = 0x0100, WmKeyUp = 0x0101, WmSysKeyDown = 0x0104, WmSysKeyUp = 0x0105;
+        if (handled || _closing || msg.message is not (WmKeyDown or WmKeyUp or WmSysKeyDown or WmSysKeyUp))
         {
-            return false;
+            return;
         }
 
+        // Only keys typed into the game window (or its game views), not the Settings or overlay windows.
+        if (_hwnd == IntPtr.Zero || (msg.hwnd != _hwnd && !IsChild(_hwnd, msg.hwnd)))
+        {
+            return;
+        }
+
+        var key = KeyInterop.KeyFromVirtualKey(msg.wParam.ToInt32());
+        var isDown = msg.message is WmKeyDown or WmSysKeyDown;
         var typing = _focused is { } f && _open.TryGetValue(f, out var slot) && slot.Session.IsTyping;
         var decision = _router.OnKey(key, isDown, CurrentModifiers(), typing);
+        if (decision.Swallow)
+        {
+            handled = true;
+        }
+
         if (decision.Action is { } action)
         {
             Dispatcher.BeginInvoke(() => Execute(action));
         }
-
-        return decision.Swallow;
     }
 
     private void Execute((ShortcutAction Action, int Slot) binding)
@@ -526,6 +540,7 @@ public partial class MainWindow : Window
     {
         _liveState.Notice = text;
         _noticeTimer.Stop();
+        ComponentDispatcher.ThreadPreprocessMessage -= OnThreadMessage;
         _noticeTimer.Start();
     }
 
@@ -667,7 +682,6 @@ public partial class MainWindow : Window
         _soakTimer.Stop();
         _noticeTimer.Stop();
         _swapTimer.Stop();
-        _hook?.Dispose();
         _settingsWindow?.Close();
         SaveSettings();
         _overlayWindow.Close();
@@ -689,7 +703,9 @@ public partial class MainWindow : Window
     private static extern short GetAsyncKeyState(int virtualKey);
 
     [DllImport("user32.dll")]
-    private static extern IntPtr GetForegroundWindow();
+    private static extern bool IsChild(IntPtr parent, IntPtr window);
+
+
 
     private static ModifierKeys CurrentModifiers()
     {
