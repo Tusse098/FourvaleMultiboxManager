@@ -42,3 +42,5 @@ The overlay caught clicks meant for the game. Now:
 ## Tests
 
 `FourvaleSessionReadTests`: enemies and their HP share from the battle room; battle results add up once per slot; totals survive a reload and restart for a different character.
+
+**Smooth timer bar (2026-10-01).** The overlay's timer bar glides linearly to each new value over one read interval (`readIntervalMs`, 250 ms) instead of stepping 4 times a second; a drop (timer reset after acting) shows at once. It interpolates only between values actually read, never predicts ahead: in a party battle all timers pause for about 2 s after an attack (discovery.md), and a predicted bar would overshoot and jump back. Cost: the bar trails the real value by at most one read interval. `SmoothProgress` attached property; the timer text is unchanged.
