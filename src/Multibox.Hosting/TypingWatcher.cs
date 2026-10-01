@@ -18,15 +18,16 @@ public sealed class TypingWatcher
         (() => {
           if (window.top !== window || !window.chrome || !window.chrome.webview) return;
           let last = null;
-          const report = () => {
+          const report = (force) => {
             const el = document.activeElement;
             const typing = !!el && el.isConnected && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable === true);
-            if (typing === last) return;
+            if (typing === last && force !== true) return;
             last = typing;
             window.chrome.webview.postMessage({ mbx: 'typing', value: typing });
           };
-          document.addEventListener('focusin', report, true);
-          document.addEventListener('focusout', () => queueMicrotask(report), true);
+          // Real focus changes always report, so a field focused after the player pressed "Unstick keys" counts again.
+          document.addEventListener('focusin', () => report(true), true);
+          document.addEventListener('focusout', () => queueMicrotask(() => report(true)), true);
           // A focused text field that is removed from the page (e.g. chat closing) fires no focusout,
           // so the state is also re-checked twice a second. Reads document.activeElement only.
           setInterval(report, 500);
@@ -39,6 +40,9 @@ public sealed class TypingWatcher
 
     /// <summary>A text field in this page has focus right now.</summary>
     public bool IsTyping { get; private set; }
+
+    /// <summary>Forget the typing state (player pressed "Unstick keys"). The next real focus change reports again.</summary>
+    public void Clear() => IsTyping = false;
 
     public async Task AttachAsync(CoreWebView2 core)
     {

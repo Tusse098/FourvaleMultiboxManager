@@ -46,6 +46,9 @@ public sealed class SlotSession : IDisposable
     /// <summary>A text field (chat, login) has focus in this slot's page: plain-key shortcuts must pass through.</summary>
     public bool IsTyping => _typing?.IsTyping ?? false;
 
+    /// <summary>Clear a typing state that may be stuck; clicking into a text field sets it again.</summary>
+    public void ClearTyping() => _typing?.Clear();
+
 
     /// <summary>Times this slot recovered from a crash (reload or rebuilt view).</summary>
     public int Recoveries { get; private set; }

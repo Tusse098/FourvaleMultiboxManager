@@ -401,6 +401,25 @@ public partial class MainWindow : Window
 
     private void OnToggleFullscreen(object sender, RoutedEventArgs e) => ToggleFullscreen();
 
+    /// <summary>Clears any stuck typing state in every slot and the router's held-key state, then gives focus back to the game.</summary>
+    private void OnUnstickKeys(object sender, RoutedEventArgs e)
+    {
+        var typing = _open.Where(o => o.Value.Session.IsTyping).Select(o => o.Key).OrderBy(n => n).ToList();
+        foreach (var slot in _open.Values)
+        {
+            slot.Session.ClearTyping();
+        }
+
+        _router.Reset();
+        _lastPassNote = null;
+        _log.Info(typing.Count == 0 ? "unstick keys: no slot was typing" : $"unstick keys: cleared typing in slot {string.Join(",", typing)}");
+        ShowNotice("Shortcuts reset");
+        if (_focused is { } f)
+        {
+            FocusSlot(f, announce: false);
+        }
+    }
+
     /// <summary>Borderless fullscreen over the taskbar; the top bar hides and comes back when the mouse touches the top edge.</summary>
     private void ToggleFullscreen()
     {
