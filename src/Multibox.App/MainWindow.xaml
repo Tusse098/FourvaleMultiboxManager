@@ -15,6 +15,8 @@
                 Padding="12,5" MouseLeave="OnTopBarMouseLeave">
             <DockPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                    <Button Style="{StaticResource ChipButton}" Content="Unstick keys" Click="OnUnstickKeys"
+                            ToolTip="Shortcuts not working? Clears every slot's 'typing in a text field' state and any held-key state" />
                     <Button Style="{StaticResource ChipButton}" Content="Overlay" Click="OnShowSettings"
                             ToolTip="Party overlay settings: when it shows, click-through, arranging" />
                     <Button Style="{StaticResource ChipButton}" Content="Settings" Click="OnShowSettings" />

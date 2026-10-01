@@ -31,3 +31,5 @@ In live play, every shortcut stopped working after toggling fullscreen. Two weak
 - **Typing detection** also re-checks `document.activeElement` twice a second and posts only on change. A focused text field removed from the page fires no `focusout`, which could leave the slot marked "typing" forever, so plain keys went to the game. The script stays read-only.
 
 When a shortcut key is passed to the game because the slot reports typing, the log says so once (`shortcut key ... passed to the game: slot N reports typing`).
+
+**Unstick keys button (2026-10-01).** The top bar has an "Unstick keys" button that clears every slot's typing state and the held-key state, then returns focus to the focused slot. Real focus changes in the page always report (only the half-second re-check skips unchanged values), so clicking into chat after a reset counts as typing again.
