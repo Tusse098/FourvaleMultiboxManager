@@ -294,7 +294,11 @@ public partial class MainWindow : Window
 
         if (decision.Action is { } action)
         {
-            Dispatcher.BeginInvoke(() => Execute(action));
+            Dispatcher.BeginInvoke(() =>
+            {
+                Execute(action);
+                RetargetMouse();
+            });
         }
     }
 
@@ -691,6 +695,22 @@ public partial class MainWindow : Window
             panel.Width = rect.Width;
             panel.Height = rect.Height;
         }
+    }
+
+    /// <summary>
+    /// After a shortcut moved panels under a mouse that did not move: WPF re-targets the mouse only on the next move, so
+    /// a click right after the swap went to the slot that was there before, and a game view clicks at its last
+    /// mouse-move position. Lay out now and re-target the mouse (the view under it gets a move at the current position).
+    /// </summary>
+    private void RetargetMouse()
+    {
+        if (_closing)
+        {
+            return;
+        }
+
+        UpdateLayout();
+        Mouse.Synchronize();
     }
 
     // ----- Adapter loop, diagnostics -----
