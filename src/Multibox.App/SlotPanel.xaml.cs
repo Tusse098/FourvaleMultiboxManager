@@ -16,6 +16,9 @@ public partial class SlotPanel : UserControl
         DataContext = card;
         Attach(card.Session.View);
         card.Session.ViewReplaced += Swap;
+
+        // The moment of the click decides which slot the player meant; the game view's focus event arrives later.
+        GameHost.PreviewMouseDown += (_, _) => GameClicked?.Invoke(_card);
         Header.MouseLeftButtonDown += (_, e) =>
         {
             // Buttons in the header handle their own clicks.
@@ -29,7 +32,13 @@ public partial class SlotPanel : UserControl
     /// <summary>The player clicked the header: focus this slot (and move keyboard focus into its game).</summary>
     public event Action<SlotCardViewModel>? FocusRequested;
 
-    /// <summary>The game view received keyboard focus (e.g. the player clicked into the game).</summary>
+    /// <summary>The player pressed a mouse button in this slot's game.</summary>
+    public event Action<SlotCardViewModel>? GameClicked;
+
+    /// <summary>
+    /// The game view received keyboard focus. Can arrive late (the browser reports it asynchronously), so it does not
+    /// choose the focused slot; <see cref="GameClicked"/> does.
+    /// </summary>
     public event Action<SlotCardViewModel>? GameFocused;
 
     public void FocusGame() => _card.Session.View.Focus();
