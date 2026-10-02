@@ -176,6 +176,7 @@ public partial class MainWindow : Window
         var card = new SlotCardViewModel(session, _freshness, new RelayCommand(session.Reload), new RelayCommand(() => CloseSlot(number)));
         var panel = new SlotPanel(card);
         panel.FocusRequested += c => FocusSlot(c.Session.Id.Number);
+        panel.GameClicked += c => OnGameClicked(c.Session.Id.Number);
         panel.GameFocused += c => OnGameFocused(c.Session.Id.Number);
         _open[number] = new OpenSlot(session, card, panel);
 
@@ -540,7 +541,23 @@ public partial class MainWindow : Window
     }
 
     /// <summary>The player clicked into a game: that slot now has the keyboard.</summary>
+    /// <summary>
+    /// A game view got keyboard focus without a click in it, e.g. a late focus report from the slot the player just
+    /// left with Space. Keys must go to the focused slot, so give focus back to it instead of switching.
+    /// </summary>
     private void OnGameFocused(int number)
+    {
+        if (_focused == number || _focused is not { } focused || !_open.TryGetValue(focused, out var slot))
+        {
+            return;
+        }
+
+        _log.Info($"slot{number} took keyboard focus without a click; back to slot{focused}");
+        Dispatcher.BeginInvoke(() => slot.Panel.FocusGame(), DispatcherPriority.Input);
+    }
+
+    /// <summary>The player clicked into a slot's game: that slot gets focus (in Focus layout, the large tile).</summary>
+    private void OnGameClicked(int number)
     {
         if (_focused == number)
         {
