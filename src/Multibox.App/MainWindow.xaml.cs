@@ -54,6 +54,7 @@ public partial class MainWindow : Window
     private bool _fullscreen;
     private int? _focused;
     private string? _lastPassNote;
+    private readonly HashSet<IntPtr> _outsideKeyWindows = [];
     private DateTimeOffset _lastRead = DateTimeOffset.UtcNow;
     private bool _closing;
     private bool _restoring;
@@ -229,6 +230,62 @@ public partial class MainWindow : Window
 
     private static string Help(string keys, string what) => keys.Length == 0 ? "" : $"{keys}: {what}";
 
+    /// <summary>Where Windows' keyboard focus is (diagnostics for "shortcuts stopped"); window handles and class names only.</summary>
+    private void LogKeyboardFocus()
+    {
+        string Describe(IntPtr window)
+        {
+            if (window == IntPtr.Zero)
+            {
+                return "none";
+            }
+
+            var name = new System.Text.StringBuilder(64);
+            GetClassName(window, name, name.Capacity);
+            return $"{window:X} ({name}, parent {GetParent(window):X}, root {GetAncestor(window, 2):X}, child of main: {IsChild(_hwnd, window)})";
+        }
+
+        _log.Info($"keyboard focus on this thread: {Describe(GetFocus())}; foreground: {Describe(GetForegroundWindow())}; main {_hwnd:X}");
+    }
+
+    /// <summary>
+    /// Whether a key message on this thread is for the main window (and so for the focused game).
+    /// Normally the game's keyboard window is a child of the main window. WebView2 can leave it elsewhere
+    /// (seen 2026-10-02 after opening a slot while others were running: every shortcut stopped), so a browser
+    /// window (class Chrome_*) on this thread also counts unless it sits in one of the app's other windows.
+    /// </summary>
+    private bool IsGameKeyWindow(IntPtr window)
+    {
+        if (window == _hwnd || IsChild(_hwnd, window))
+        {
+            return true;
+        }
+
+        const uint GaRoot = 2;
+        var root = GetAncestor(window, GaRoot);
+        foreach (Window other in Application.Current.Windows)
+        {
+            if (other != this && new WindowInteropHelper(other).Handle == root)
+            {
+                return false; // Settings, Live state: their keys are their own.
+            }
+        }
+
+        var name = new System.Text.StringBuilder(64);
+        GetClassName(window, name, name.Capacity);
+        if (!name.ToString().StartsWith("Chrome_", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (_outsideKeyWindows.Add(window))
+        {
+            _log.Warning($"keyboard window {window:X} ({name}) is outside the main window (parent {GetParent(window):X}, root {root:X}); its keys still count");
+        }
+
+        return true;
+    }
+
     /// <summary>
     /// Every keyboard message for this window and its child windows, before anything handles it. Each game view's
     /// keyboard focus is a child window of this process (WebView2's input window), so its keys never raise WPF key
@@ -245,7 +302,7 @@ public partial class MainWindow : Window
         }
 
         // Only keys typed into the game window (or its game views), not the Settings or overlay windows.
-        if (_hwnd == IntPtr.Zero || (msg.hwnd != _hwnd && !IsChild(_hwnd, msg.hwnd)))
+        if (_hwnd == IntPtr.Zero || !IsGameKeyWindow(msg.hwnd))
         {
             return;
         }
@@ -432,6 +489,9 @@ public partial class MainWindow : Window
         {
             FocusSlot(f, announce: false);
         }
+
+        // After focus has gone back to the game (the button click itself took it).
+        Dispatcher.BeginInvoke(LogKeyboardFocus, DispatcherPriority.ContextIdle);
     }
 
     /// <summary>Borderless fullscreen over the taskbar; the top bar hides and comes back when the mouse touches the top edge.</summary>
@@ -753,6 +813,21 @@ public partial class MainWindow : Window
 
     [DllImport("user32.dll")]
     private static extern bool IsChild(IntPtr parent, IntPtr window);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetAncestor(IntPtr window, uint flags);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetParent(IntPtr window);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetFocus();
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetClassName(IntPtr window, System.Text.StringBuilder name, int maxCount);
 
 
 
