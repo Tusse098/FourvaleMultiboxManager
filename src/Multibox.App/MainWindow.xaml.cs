@@ -54,7 +54,6 @@ public partial class MainWindow : Window
     private bool _fullscreen;
     private int? _focused;
     private string? _lastPassNote;
-    private readonly HashSet<IntPtr> _outsideKeyWindows = [];
     private DateTimeOffset _lastRead = DateTimeOffset.UtcNow;
     private bool _closing;
     private bool _restoring;
@@ -91,7 +90,7 @@ public partial class MainWindow : Window
             Help(_shortcuts.Describe(ShortcutAction.FocusSlot).Replace("1", "1…" + _config.SlotCount, StringComparison.Ordinal), "focus a slot"),
             Help(_shortcuts.Describe(ShortcutAction.NextSlot), "next slot"),
             Help(_shortcuts.Describe(ShortcutAction.PreviousSlot), "previous slot"),
-            Help(_shortcuts.Describe(ShortcutAction.NextReady), "character that acts next (READY first, else the lowest timer)"),
+            Help(_shortcuts.Describe(ShortcutAction.NextReady), "character that acts next (READY first, then anyone whose battle ended, else the lowest timer)"),
             Help(_shortcuts.Describe(ShortcutAction.ToggleFullscreen), "fullscreen"),
             "Plain-key shortcuts are off while you type in chat or a login field.",
         }.Where(l => l.Length > 0));
@@ -249,44 +248,6 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Whether a key message on this thread is for the main window (and so for the focused game).
-    /// Normally the game's keyboard window is a child of the main window. WebView2 can leave it elsewhere
-    /// (seen 2026-10-02 after opening a slot while others were running: every shortcut stopped), so a browser
-    /// window (class Chrome_*) on this thread also counts unless it sits in one of the app's other windows.
-    /// </summary>
-    private bool IsGameKeyWindow(IntPtr window)
-    {
-        if (window == _hwnd || IsChild(_hwnd, window))
-        {
-            return true;
-        }
-
-        const uint GaRoot = 2;
-        var root = GetAncestor(window, GaRoot);
-        foreach (Window other in Application.Current.Windows)
-        {
-            if (other != this && new WindowInteropHelper(other).Handle == root)
-            {
-                return false; // Settings, Live state: their keys are their own.
-            }
-        }
-
-        var name = new System.Text.StringBuilder(64);
-        GetClassName(window, name, name.Capacity);
-        if (!name.ToString().StartsWith("Chrome_", StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        if (_outsideKeyWindows.Add(window))
-        {
-            _log.Warning($"keyboard window {window:X} ({name}) is outside the main window (parent {GetParent(window):X}, root {root:X}); its keys still count");
-        }
-
-        return true;
-    }
-
-    /// <summary>
     /// Every keyboard message for this window and its child windows, before anything handles it. Each game view's
     /// keyboard focus is a child window of this process (WebView2's input window), so its keys never raise WPF key
     /// events; they do pass through this thread's message loop, which <see cref="ComponentDispatcher"/> exposes.
@@ -302,7 +263,7 @@ public partial class MainWindow : Window
         }
 
         // Only keys typed into the game window (or its game views), not the Settings or overlay windows.
-        if (_hwnd == IntPtr.Zero || !IsGameKeyWindow(msg.hwnd))
+        if (_hwnd == IntPtr.Zero || (msg.hwnd != _hwnd && !IsChild(_hwnd, msg.hwnd)))
         {
             return;
         }
@@ -375,16 +336,17 @@ public partial class MainWindow : Window
                 }
 
                 var timers = OpenIds().ToDictionary(id => id, id => SlotNavigator.SecondsUntilReady(_store.Get(id), _freshness, now));
-                var next = SlotNavigator.NextToAct(OpenIds(), Focused(), id => timers[id]);
+                var waiting = OpenIds().Where(id => SlotNavigator.IsWaitingAfterBattle(_store.Get(id), _freshness, now)).ToHashSet();
+                var next = SlotNavigator.NextToAct(OpenIds(), Focused(), id => timers[id], waiting.Contains);
                 _log.Info(string.Create(CultureInfo.InvariantCulture,
-                    $"next to act -> {next?.ToString() ?? "none"} ({string.Join(", ", timers.Select(t => $"{t.Key} {(t.Value is { } v ? $"{v:0.0}s" : "-")}"))}; last read {sinceRead.TotalMilliseconds:0} ms before)"));
+                    $"next to act -> {next?.ToString() ?? "none"} ({string.Join(", ", timers.Select(t => $"{t.Key} {(t.Value is { } v ? $"{v:0.0}s" : waiting.Contains(t.Key) ? "after battle" : "-")}"))}; last read {sinceRead.TotalMilliseconds:0} ms before)"));
                 if (next is { } target)
                 {
                     FocusSlot(target.Number);
                 }
                 else
                 {
-                    ShowNotice("No character is in battle");
+                    ShowNotice("No character is in battle or waiting after one");
                 }
 
                 break;
@@ -648,7 +610,6 @@ public partial class MainWindow : Window
     {
         _liveState.Notice = text;
         _noticeTimer.Stop();
-        ComponentDispatcher.ThreadPreprocessMessage -= OnThreadMessage;
         _noticeTimer.Start();
     }
 
@@ -786,6 +747,7 @@ public partial class MainWindow : Window
     private void OnClosing(object? sender, CancelEventArgs e)
     {
         _closing = true;
+        ComponentDispatcher.ThreadPreprocessMessage -= OnThreadMessage;
         _readTimer.Stop();
         _metricsTimer.Stop();
         _soakTimer.Stop();
