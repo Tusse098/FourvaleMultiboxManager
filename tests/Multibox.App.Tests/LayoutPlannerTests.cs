@@ -79,6 +79,41 @@ public class LayoutPlannerTests
         Assert.All(plan.Panels.Skip(1), p => Assert.True(p.Width <= available.Width * 0.3 + 0.01));
     }
 
+    [Theory]
+    [InlineData(1920, 1000, 3)] // 16:9 monitor (minus the top bar)
+    [InlineData(1680, 1010, 3)] // 16:10
+    [InlineData(1024, 728, 4)]  // 4:3
+    [InlineData(1080, 1860, 3)] // portrait
+    [InlineData(3458, 1380, 5)] // 21:9 ultrawide
+    public void Focus_fits_any_screen_shape_and_picks_the_larger_main_game(double width, double height, int count)
+    {
+        var available = new Size(width, height);
+
+        var plan = LayoutPlanner.Arrange(count, focus: true, available, Aspect, Chrome, 0.3);
+
+        Assert.Equal(count, plan.Panels.Count);
+        Assert.All(plan.Panels, p => { AssertGameIs16By9(p); AssertInside(p, available); });
+        Assert.All(plan.Panels.Skip(1), p => Assert.True(Game(p).Width < plan.RenderSize.Width));
+        for (var i = 0; i < plan.Panels.Count; i++)
+        {
+            for (var j = i + 1; j < plan.Panels.Count; j++)
+            {
+                var overlap = Rect.Intersect(plan.Panels[i], plan.Panels[j]);
+                Assert.True(overlap.IsEmpty || overlap.Width < 0.01 || overlap.Height < 0.01, $"panels {i} and {j} overlap");
+            }
+        }
+    }
+
+    [Fact]
+    public void Focus_puts_the_small_tiles_below_on_a_portrait_screen_and_beside_on_an_ultrawide()
+    {
+        var portrait = LayoutPlanner.Arrange(3, focus: true, new Size(1080, 1860), Aspect, Chrome, 0.3);
+        Assert.True(portrait.Panels[1].Top >= portrait.Panels[0].Bottom - 0.01);
+
+        var wide = LayoutPlanner.Arrange(3, focus: true, new Size(3458, 1380), Aspect, Chrome, 0.3);
+        Assert.True(wide.Panels[1].Left >= wide.Panels[0].Right - 0.01);
+    }
+
     [Fact]
     public void Nothing_to_place_gives_an_empty_plan()
     {

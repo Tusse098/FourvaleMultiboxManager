@@ -14,11 +14,11 @@ public static class LayoutPlanner
     public sealed record Plan(IReadOnlyList<Rect> Panels, Size RenderSize);
 
     /// <param name="count">Number of open slots.</param>
-    /// <param name="focus">Focus layout (one large, others in a column) instead of an even grid.</param>
+    /// <param name="focus">Focus layout (one large, others in a column or row) instead of an even grid.</param>
     /// <param name="available">Space for all panels.</param>
     /// <param name="aspect">Game width / height (16/9).</param>
     /// <param name="chrome">Per-panel space that is not game: edge on both sides and header.</param>
-    /// <param name="maxTileShare">Focus layout: the small-tile column may use at most this share of the width.</param>
+    /// <param name="maxTileShare">Focus layout: the small tiles may use at most this share of the width (column) or height (row).</param>
     public static Plan Arrange(int count, bool focus, Size available, double aspect, Size chrome, double maxTileShare)
     {
         if (count <= 0 || available.Width <= chrome.Width || available.Height <= chrome.Height)
@@ -62,11 +62,19 @@ public static class LayoutPlanner
         return new Plan(panels, best.Game);
     }
 
-    /// <summary>One large panel on the left, the others stacked in a column on its right; the block is centred.</summary>
+    /// <summary>
+    /// One large panel with the others beside it: in a column on its right (wide screens) or in a row below it
+    /// (16:10, 4:3, portrait), whichever gives the larger main game. The block is centred.
+    /// </summary>
     private static Plan ArrangeFocus(int count, Size available, double aspect, Size chrome, double maxTileShare)
     {
-        var small = count - 1;
+        var column = FocusWithColumn(count - 1, available, aspect, chrome, maxTileShare);
+        var row = FocusWithRow(count - 1, available, aspect, chrome, maxTileShare);
+        return row.RenderSize.Width > column.RenderSize.Width ? row : column;
+    }
 
+    private static Plan FocusWithColumn(int small, Size available, double aspect, Size chrome, double maxTileShare)
+    {
         // Small tiles: as tall as an even share of the height allows, but no wider than the allowed column share.
         var smallGame = Fit(available.Width * maxTileShare - chrome.Width, available.Height / small - chrome.Height, aspect);
         var smallTile = new Size(smallGame.Width + chrome.Width, smallGame.Height + chrome.Height);
@@ -80,6 +88,26 @@ public static class LayoutPlanner
         for (var i = 0; i < small; i++)
         {
             panels.Add(new Rect(left + bigTile.Width, columnTop + i * smallTile.Height, smallTile.Width, smallTile.Height));
+        }
+
+        return new Plan(panels, bigGame);
+    }
+
+    private static Plan FocusWithRow(int small, Size available, double aspect, Size chrome, double maxTileShare)
+    {
+        // Small tiles: as wide as an even share of the width allows, but no taller than the allowed row share.
+        var smallGame = Fit(available.Width / small - chrome.Width, available.Height * maxTileShare - chrome.Height, aspect);
+        var smallTile = new Size(smallGame.Width + chrome.Width, smallGame.Height + chrome.Height);
+
+        var bigGame = Fit(available.Width - chrome.Width, available.Height - smallTile.Height - chrome.Height, aspect);
+        var bigTile = new Size(bigGame.Width + chrome.Width, bigGame.Height + chrome.Height);
+
+        var top = (available.Height - bigTile.Height - smallTile.Height) / 2;
+        var panels = new List<Rect> { new((available.Width - bigTile.Width) / 2, top, bigTile.Width, bigTile.Height) };
+        var rowLeft = (available.Width - small * smallTile.Width) / 2;
+        for (var i = 0; i < small; i++)
+        {
+            panels.Add(new Rect(rowLeft + i * smallTile.Width, top + bigTile.Height, smallTile.Width, smallTile.Height));
         }
 
         return new Plan(panels, bigGame);
