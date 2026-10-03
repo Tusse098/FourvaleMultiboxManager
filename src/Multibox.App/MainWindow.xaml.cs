@@ -90,7 +90,7 @@ public partial class MainWindow : Window
             Help(_shortcuts.Describe(ShortcutAction.FocusSlot).Replace("1", "1…" + _config.SlotCount, StringComparison.Ordinal), "focus a slot"),
             Help(_shortcuts.Describe(ShortcutAction.NextSlot), "next slot"),
             Help(_shortcuts.Describe(ShortcutAction.PreviousSlot), "previous slot"),
-            Help(_shortcuts.Describe(ShortcutAction.NextReady), "character that acts next (READY first, then anyone whose battle ended, else the lowest timer)"),
+            Help(_shortcuts.Describe(ShortcutAction.NextReady), "character that acts next (READY first, else the lowest timer; when nobody fights, whoever just finished a battle)"),
             Help(_shortcuts.Describe(ShortcutAction.ToggleFullscreen), "fullscreen"),
             "Plain-key shortcuts are off while you type in chat or a login field.",
         }.Where(l => l.Length > 0));

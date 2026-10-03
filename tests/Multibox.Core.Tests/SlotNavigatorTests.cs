@@ -110,19 +110,21 @@ public class SlotNavigatorTests
     }
 
     [Fact]
-    public void Next_to_act_after_ready_slots_goes_to_slots_waiting_after_a_battle_then_the_lowest_timer()
+    public void Slots_waiting_after_a_battle_only_count_when_nobody_is_in_battle()
     {
         var seconds = new Dictionary<SlotId, double?> { [S1] = 0.8, [S2] = null, [S5] = 2.0 };
         var waiting = new HashSet<SlotId> { S2 };
 
-        Assert.Equal(S2, SlotNavigator.NextToAct(Open, S1, s => seconds[s], waiting.Contains));
-        Assert.Equal(S2, SlotNavigator.NextToAct(Open, S5, s => seconds[s], waiting.Contains));
+        Assert.Equal(S1, SlotNavigator.NextToAct(Open, S5, s => seconds[s], waiting.Contains)); // someone fights: lowest timer
+        Assert.Equal(S1, SlotNavigator.NextToAct(Open, S1, s => seconds[s], waiting.Contains)); // stays with the fighters
 
-        seconds[S5] = 0; // someone in battle is READY: that comes first
-        Assert.Equal(S5, SlotNavigator.NextToAct(Open, S1, s => seconds[s], waiting.Contains));
+        seconds[S5] = 0;
+        Assert.Equal(S5, SlotNavigator.NextToAct(Open, S1, s => seconds[s], waiting.Contains)); // READY first
 
-        seconds[S5] = 2.0;
-        Assert.Equal(S1, SlotNavigator.NextToAct(Open, S5, s => seconds[s], _ => false)); // nobody waiting: lowest timer
+        seconds[S1] = null;
+        seconds[S5] = null;
+        Assert.Equal(S2, SlotNavigator.NextToAct(Open, S1, s => seconds[s], waiting.Contains)); // nobody fights: the waiting one
+        Assert.Null(SlotNavigator.NextToAct(Open, S1, s => seconds[s], _ => false));
     }
 
     [Fact]

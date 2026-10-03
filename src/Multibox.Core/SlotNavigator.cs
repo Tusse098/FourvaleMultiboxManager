@@ -52,9 +52,9 @@ public static class SlotNavigator
     /// The slot that acts next, in this order (each step cycles from the slot after <paramref name="current"/>, so
     /// pressing again moves through everyone in that group):
     /// 1. a READY slot in battle;
-    /// 2. a slot whose battle has ended and that is not in a new one yet (waiting for the player);
-    /// 3. the slot with the least time left on its action timer (ties: the first after <paramref name="current"/>).
-    /// Null when nobody is in battle or waiting after one.
+    /// 2. the slot with the least time left on its action timer (ties: the first after <paramref name="current"/>);
+    /// 3. only when nobody is in battle: a slot whose battle has ended and that is not in a new one yet.
+    /// While anyone is in battle, Space stays with the fighters. Null when nobody is in battle or waiting after one.
     /// </summary>
     /// <param name="secondsUntilReady">Seconds until the slot can act (0 = ready), or null when not in battle / unknown.</param>
     /// <param name="waitingAfterBattle">The slot finished a battle and is out of battle now; null treats nobody as waiting.</param>
@@ -64,11 +64,6 @@ public static class SlotNavigator
         if (NextReady(open, current, s => secondsUntilReady(s) is <= 0) is { } ready)
         {
             return ready;
-        }
-
-        if (waitingAfterBattle is not null && NextReady(open, current, waitingAfterBattle) is { } waiting)
-        {
-            return waiting;
         }
 
         if (open.Count == 0)
@@ -89,7 +84,8 @@ public static class SlotNavigator
             }
         }
 
-        return best;
+        // Nobody in battle: go to whoever finished a battle and has to start the next one.
+        return best ?? (waitingAfterBattle is not null ? NextReady(open, current, waitingAfterBattle) : null);
     }
 
     /// <summary>

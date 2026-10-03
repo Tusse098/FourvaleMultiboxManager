@@ -8,7 +8,7 @@ A Windows desktop app for playing several [Fourvale](https://fourvale.com/) acco
 
 - **2–5 isolated sessions** side by side, each with its own login (one WebView2 profile per slot).
 - **Layouts:** *Grid* (equal 16:9 tiles in the shape that makes the games largest) and *Focus* (one large game plus small live tiles). Switching is instant and flicker-free, and every slot keeps running.
-- **Keyboard:** `1`–`5` focus a slot, `Alt` cycles to the next slot, `Space` jumps to the character that acts next (READY first, then anyone whose battle just ended, otherwise the lowest timer), and `Alt+Enter` toggles borderless fullscreen. Shortcuts stay off while you type in chat or a login field.
+- **Keyboard:** `1`–`5` focus a slot, `Alt` cycles to the next slot, `Space` jumps to the character that acts next (READY first, otherwise the lowest timer; when nobody is fighting, whoever just finished a battle), and `Alt+Enter` toggles borderless fullscreen. Shortcuts stay off while you type in chat or a login field.
 - **Party overlay:** HP, SP and the action timer of every character. Transparent, click-through, shown only in battle (or always). Configured in *Settings*.
 - **Live state window** and soak logging for diagnostics: connection, adapter health, decode errors, browser memory and CPU.
 
