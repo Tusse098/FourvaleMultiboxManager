@@ -1,0 +1,43 @@
+# Builds and tests every push and pull request on a clean Windows machine.
+# The SDK comes from global.json, so CI builds exactly like a developer PC and the release script.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: # "Run workflow" button on the Actions tab
+
+# Read-only: this workflow never changes the repository.
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the older, still-running check.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest # WPF and WebView2 need Windows
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: dotnet build FourvaleMultibox.slnx --configuration Release
+
+      - name: Test
+        run: dotnet test FourvaleMultibox.slnx --configuration Release --no-build --logger "trx;LogFilePrefix=results"
+
+      - name: Keep test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/TestResults/*.trx"
+          retention-days: 14
