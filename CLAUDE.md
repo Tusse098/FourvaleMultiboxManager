@@ -84,7 +84,7 @@ dotnet run --project src/Multibox.App            # the app (Live state window: S
 powershell -ExecutionPolicy Bypass -File tools\scripts\publish.ps1   # local try-out of the release zip in artifacts\
 ```
 
-**Releases:** follow `docs/development.md`, "Making a release", every time. GitHub builds releases from a pushed
+**Releases:** first public version 1.0.0 (2026-10-06). Follow `docs/development.md`, "Making a release", every time. GitHub builds releases from a pushed
 `v*.*.*` tag (`.github/workflows/release.yml`) as a draft; never upload a zip by hand. Pushing a release tag and
 publishing, editing or deleting a release need the owner's explicit go-ahead each time.
 

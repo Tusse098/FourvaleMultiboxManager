@@ -31,19 +31,26 @@ Releases are built by GitHub, never uploaded by hand. Pushing a version tag star
 which runs the tests, builds the zip with `tools/scripts/publish.ps1`, adds a SHA-256 checksum and creates a
 **draft** release. Nothing is public until the draft is published.
 
-**Version numbers** (`MAJOR.MINOR.PATCH`): new features → raise MINOR and set PATCH to 0 (0.1.0 → 0.2.0); only fixes →
-raise PATCH (0.2.0 → 0.2.1). Stay below 1.0.0 while Fourvale and this app are in beta; 0.x releases are marked as
-pre-releases automatically. Never reuse a version number that was already released.
+**Version numbers** (`MAJOR.MINOR.PATCH`, starting at 1.0.0 on 2026-10-06; 0.1.0 was an early pre-release and 0.2.0
+was prepared but never released):
+- only fixes → raise PATCH (1.0.0 → 1.0.1);
+- new features → raise MINOR and set PATCH to 0 (1.0.1 → 1.1.0);
+- a change that breaks players' saved settings or how the app is used → raise MAJOR (1.1.0 → 2.0.0).
+
+A normal release gets GitHub's **Latest** badge, and the README's download link (`/releases/latest`) points to it.
+For a test build that most players should not get, add a suffix to both `<Version>` and the tag (`1.1.0-test1`,
+`v1.1.0-test1`); it is marked as a pre-release instead. Never reuse a version number that was already released.
+Release titles are just the tag (`v1.0.0`).
 
 **Steps:**
 
 1. **Check `main`:** the CI check on the latest commit is ✅, and the changes were tried in the real app.
 2. **Set the version:** change `<Version>` in `src/Multibox.App/Multibox.App.csproj`, commit
-   (`Release 0.2.0`) and push.
+   (`Release 1.1.0`) and push.
 3. **Tag and push the tag** (the tag must match `<Version>`, with a `v` in front; otherwise the build stops):
    ```powershell
-   git tag v0.2.0
-   git push origin v0.2.0
+   git tag v1.1.0
+   git push origin v1.1.0
    ```
 4. **Wait for the Release workflow** (about 5 minutes) on the Actions tab. If it fails, see *If a release build fails*.
 5. **Review the draft** on the Releases page:
@@ -55,10 +62,10 @@ pre-releases automatically. Never reuse a version number that was already releas
 **If a release build fails:** fix the problem on `main`, then move the tag to the fixed commit, as long as the release
 was never published:
 ```powershell
-git tag -d v0.2.0
-git push origin :refs/tags/v0.2.0     # delete the tag on GitHub (also delete a half-made draft there, if any)
-git tag v0.2.0
-git push origin v0.2.0
+git tag -d v1.1.0
+git push origin :refs/tags/v1.1.0     # delete the tag on GitHub (also delete a half-made draft there, if any)
+git tag v1.1.0
+git push origin v1.1.0
 ```
 After a release is published, never move or reuse its tag: make a new PATCH version instead.
 

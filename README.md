@@ -13,7 +13,7 @@ A Windows app for playing several [Fourvale](https://fourvale.com/) accounts at 
 
 ## Download and start
 
-1. Download `FourvaleMultibox-<version>-win-x64.zip` from the [Releases](https://github.com/Tusse098/FourvaleMultiboxManager/releases) page.
+1. Download `FourvaleMultibox-<version>-win-x64.zip` from the **[latest release](https://github.com/Tusse098/FourvaleMultiboxManager/releases/latest)** (under *Assets*).
 2. Unzip it anywhere (for example `Documents\FourvaleMultibox`).
 3. Run `Multibox.App.exe`.
 

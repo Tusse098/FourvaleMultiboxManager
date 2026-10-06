@@ -45,8 +45,8 @@ jobs:
           $hash = (Get-Content "$zip.sha256").Split(' ')[0].ToUpperInvariant()
           $notes = (Get-Content .github/release-notes.md -Raw -Encoding utf8).Replace('{VERSION}', $version).Replace('{SHA256}', $hash)
           Set-Content release-notes.tmp.md $notes -Encoding utf8
-          # 0.x versions are pre-releases until 1.0.
-          $extra = @()
-          if ($version.StartsWith('0.')) { $extra += '--prerelease' }
-          gh release create $tag $zip "$zip.sha256" --draft @extra --title "Fourvale Multibox Manager $version" --notes-file release-notes.tmp.md --generate-notes --verify-tag
+          # A normal release becomes "Latest" (sidebar badge, /releases/latest link). Only a test version with a
+          # suffix, e.g. v0.3.0-test1 (and <Version>0.3.0-test1</Version>), is marked as a pre-release.
+          $extra = if ($version.Contains('-')) { @('--prerelease') } else { @('--latest') }
+          gh release create $tag $zip "$zip.sha256" --draft @extra --title $tag --notes-file release-notes.tmp.md --generate-notes --verify-tag
           if ($LASTEXITCODE -ne 0) { throw 'Creating the draft release failed.' }
