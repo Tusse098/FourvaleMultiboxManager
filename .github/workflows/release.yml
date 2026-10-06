@@ -1,0 +1,52 @@
+# Builds a release when a version tag (v1.2.3) is pushed, and creates it as a DRAFT on the Releases page.
+# Nothing is public until a person opens the draft, checks it and clicks Publish.
+# Steps for making a release: docs/development.md, "Making a release".
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write # create the draft release and upload the zip
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      # Tests, self-contained publish, zip and checksum: the same script as on a developer PC.
+      # Stops if the tag and <Version> in Multibox.App.csproj differ.
+      - name: Test and build the zip
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          ./tools/scripts/publish.ps1 -ExpectedVersion $version
+
+      - name: Create draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.TrimStart('v')
+          $zip = "artifacts/FourvaleMultibox-$version-win-x64.zip"
+          # Upper case, as Get-FileHash prints it, so players can compare by eye.
+          $hash = (Get-Content "$zip.sha256").Split(' ')[0].ToUpperInvariant()
+          $notes = (Get-Content .github/release-notes.md -Raw -Encoding utf8).Replace('{VERSION}', $version).Replace('{SHA256}', $hash)
+          Set-Content release-notes.tmp.md $notes -Encoding utf8
+          # 0.x versions are pre-releases until 1.0.
+          $extra = @()
+          if ($version.StartsWith('0.')) { $extra += '--prerelease' }
+          gh release create $tag $zip "$zip.sha256" --draft @extra --title "Fourvale Multibox Manager $version" --notes-file release-notes.tmp.md --generate-notes --verify-tag
+          if ($LASTEXITCODE -ne 0) { throw 'Creating the draft release failed.' }

@@ -81,8 +81,12 @@ dotnet test FourvaleMultibox.slnx
 dotnet run --project tools/Fourvale.Capture      # Phase 1 capture tool
 dotnet run --project tools/Fourvale.Replay -- <capture.jsonl> [--schema] [--self] [--state <seconds>]
 dotnet run --project src/Multibox.App            # the app (Live state window: Settings > Developer tools)
-powershell -ExecutionPolicy Bypass -File tools\scripts\publish.ps1   # tests + self-contained release zip in artifacts\
+powershell -ExecutionPolicy Bypass -File tools\scripts\publish.ps1   # local try-out of the release zip in artifacts\
 ```
+
+**Releases:** follow `docs/development.md`, "Making a release", every time. GitHub builds releases from a pushed
+`v*.*.*` tag (`.github/workflows/release.yml`) as a draft; never upload a zip by hand. Pushing a release tag and
+publishing, editing or deleting a release need the owner's explicit go-ahead each time.
 
 Do not run the app and the capture tool at the same time: they share the WebView2 profile folder.
 Redaction/observation rules: `src/Fourvale.Adapter/fourvale-adapter.json` (shared). App settings: `src/Multibox.App/multibox.json`.
