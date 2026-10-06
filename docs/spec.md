@@ -221,7 +221,7 @@ All shortcuts are configurable. Defaults avoid F1 (help) and F5 (browser refresh
 |---|---|
 | Focus slot 1–5 | `Ctrl+1` … `Ctrl+5` |
 | Next / previous slot | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
-| **Focus next Ready / attention item** | `Ctrl+Space` |
+| ~~Focus next Ready / attention item~~ | ~~`Ctrl+Space`~~ removed 2026-10-06 (ADR 0010) |
 | Acknowledge current attention item | `Ctrl+Enter` |
 | Toggle dashboard | `Ctrl+D` |
 | Cycle layout mode | `Ctrl+M` |
@@ -259,7 +259,9 @@ State changes become timestamped events:
 
 ### 10.3 Ready detection
 
-"Who needs me next" is the primary use case. Ready events (action available, combat ended, idle after activity) feed the `Ctrl+Space` round-robin and should be built as carefully as danger alerts.
+"Who needs me next" is the primary use case. Ready events (action available, combat ended, idle after activity) should be built as carefully as danger alerts.
+
+> **Spec change 2026-10-06 (ADR 0010):** the `Ctrl+Space` / Space "focus next Ready" round-robin was removed at the player's request. Ready events may still feed the attention queue and notifications.
 
 ---
 
@@ -294,7 +296,7 @@ Quiet mode suppresses sound and toasts.
 
 ### 12.1 Always available (Tier A)
 
-- Focus next Ready/attention character (`Ctrl+Space`).
+- ~~Focus next Ready/attention character (`Ctrl+Space`).~~ Removed 2026-10-06 (ADR 0010).
 - One-key focus per slot.
 - Audio follows focus.
 

@@ -1,7 +1,7 @@
 # ADR 0006 — Click mirroring (Tier B) pulled forward
 
 - **Date:** 2026-10-01
-- **Status:** **Superseded and removed 2026-10-01.** Mirroring is not allowed (`docs/policy.md` §5a). All mirroring code (`MouseMirror`, `MouseHook`, `CanvasWatcher`, `DispatchMirroredMouse`), the `EnableInputMirroring` build flag, the settings section, the indicators and `start-with-mirroring.cmd` were deleted; no hidden way to re-enable it remains (spec §12.3, hard rule 7). Kept as history.
+- **Status:** **Superseded and removed 2026-10-01.** Mirroring is not allowed (`docs/policy.md` §5a). All mirroring code (`MouseMirror`, `MouseHook`, `CanvasWatcher`, `DispatchMirroredMouse`), the `EnableInputMirroring` build flag, the settings section, the indicators and `start-with-mirroring.cmd` were deleted; no hidden way to re-enable it remains (spec §12.3, hard rule 7). Kept as history. Re-verified 2026-10-06: no Ctrl+click or mirroring code in the repository (ADR 0010).
 - **Phase:** pulled forward from Phase 8 into Phase 3 at the player's request.
 
 ## Context

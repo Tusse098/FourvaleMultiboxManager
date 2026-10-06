@@ -71,6 +71,9 @@ public sealed record OverlaySettings(
 public sealed record AppSettings(List<int> OpenSlots, PanelLayout Layout, int? FocusedSlot)
 {
     public OverlaySettings Overlay { get; init; } = new();
+
+    /// <summary>Live state window, soak log and browser task manager, for troubleshooting. Off for normal players.</summary>
+    public bool DeveloperTools { get; init; }
 }
 
 /// <summary>

@@ -6,6 +6,9 @@
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyTitle>Fourvale Multibox Manager</AssemblyTitle>
+    <Product>Fourvale Multibox Manager</Product>
+    <Version>0.1.0</Version>
+    <Copyright>Copyright (c) 2026 Tusse098. MIT License.</Copyright>
     <!-- WPF0001: Application.ThemeMode (Fluent dark theme) is marked experimental. -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
   </PropertyGroup>

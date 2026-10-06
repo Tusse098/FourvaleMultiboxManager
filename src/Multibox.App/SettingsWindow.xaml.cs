@@ -1,18 +1,30 @@
 using System.ComponentModel;
 using System.Globalization;
+using System.Reflection;
 using System.Windows;
 
 namespace Multibox.App;
 
-/// <summary>Settings shown in <see cref="SettingsWindow"/>: party overlay options and the keyboard reference.</summary>
+/// <summary>Settings shown in <see cref="SettingsWindow"/>: party overlay options, the keyboard reference and developer tools.</summary>
 public sealed class SettingsViewModel(string shortcutHelp, double defaultOpacity, Action changed) : Observable
 {
     private OverlayMode _mode = OverlayMode.InBattle;
     private bool _clickThrough = true;
     private bool _onlyBattleRows;
     private double _opacityPercent = Math.Round(defaultOpacity * 100);
+    private bool _developerTools;
 
     public string ShortcutHelp { get; } = shortcutHelp;
+
+    public string VersionText { get; } =
+        $"Version {typeof(SettingsViewModel).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "?"}";
+
+    /// <summary>Shows the Live state window and browser task manager buttons and writes the soak log.</summary>
+    public bool DeveloperTools
+    {
+        get => _developerTools;
+        set { if (Set(ref _developerTools, value)) changed(); }
+    }
 
     public bool ShowInBattle { get => _mode == OverlayMode.InBattle; set { if (value) SetMode(OverlayMode.InBattle); } }
     public bool ShowAlways { get => _mode == OverlayMode.Always; set { if (value) SetMode(OverlayMode.Always); } }
@@ -60,13 +72,14 @@ public sealed class SettingsViewModel(string shortcutHelp, double defaultOpacity
 
     public OverlayMode Mode => _mode;
 
-    public void Load(OverlaySettings overlay, double defaultOpacity)
+    public void Load(OverlaySettings overlay, double defaultOpacity, bool developerTools)
     {
+        _developerTools = developerTools;
         _mode = overlay.Mode;
         _clickThrough = overlay.ClickThrough;
         _onlyBattleRows = overlay.OnlyBattleRows;
         _opacityPercent = Math.Clamp(Math.Round((overlay.Opacity ?? defaultOpacity) * 100), 20, 100);
-        foreach (var name in new[] { nameof(ShowInBattle), nameof(ShowAlways), nameof(ShowOff), nameof(ClickThrough), nameof(ArrangeHint), nameof(OnlyBattleRows), nameof(OpacityPercent), nameof(OpacityText) })
+        foreach (var name in new[] { nameof(ShowInBattle), nameof(ShowAlways), nameof(ShowOff), nameof(ClickThrough), nameof(ArrangeHint), nameof(OnlyBattleRows), nameof(OpacityPercent), nameof(OpacityText), nameof(DeveloperTools) })
         {
             OnPropertyChanged(name);
         }

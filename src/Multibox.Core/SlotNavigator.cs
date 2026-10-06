@@ -25,70 +25,6 @@ public static class SlotNavigator
     }
 
     /// <summary>
-    /// The first ready slot after <paramref name="current"/> in slot order, wrapping around and ending with
-    /// <paramref name="current"/> itself. Null when no slot is ready.
-    /// </summary>
-    public static SlotId? NextReady(IReadOnlyList<SlotId> open, SlotId? current, Func<SlotId, bool> isReady)
-    {
-        if (open.Count == 0)
-        {
-            return null;
-        }
-
-        var start = current is { } c ? IndexOf(open, c) : -1;
-        for (var i = 1; i <= open.Count; i++)
-        {
-            var candidate = open[((start + i) % open.Count + open.Count) % open.Count];
-            if (isReady(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// The slot that acts next, in this order (each step cycles from the slot after <paramref name="current"/>, so
-    /// pressing again moves through everyone in that group):
-    /// 1. a READY slot in battle;
-    /// 2. the slot with the least time left on its action timer (ties: the first after <paramref name="current"/>);
-    /// 3. only when nobody is in battle: a slot whose battle has ended and that is not in a new one yet.
-    /// While anyone is in battle, Space stays with the fighters. Null when nobody is in battle or waiting after one.
-    /// </summary>
-    /// <param name="secondsUntilReady">Seconds until the slot can act (0 = ready), or null when not in battle / unknown.</param>
-    /// <param name="waitingAfterBattle">The slot finished a battle and is out of battle now; null treats nobody as waiting.</param>
-    public static SlotId? NextToAct(
-        IReadOnlyList<SlotId> open, SlotId? current, Func<SlotId, double?> secondsUntilReady, Func<SlotId, bool>? waitingAfterBattle = null)
-    {
-        if (NextReady(open, current, s => secondsUntilReady(s) is <= 0) is { } ready)
-        {
-            return ready;
-        }
-
-        if (open.Count == 0)
-        {
-            return null;
-        }
-
-        var start = current is { } c ? IndexOf(open, c) : -1;
-        SlotId? best = null;
-        var bestSeconds = double.MaxValue;
-        for (var i = 1; i <= open.Count; i++)
-        {
-            var candidate = open[((start + i) % open.Count + open.Count) % open.Count];
-            if (secondsUntilReady(candidate) is { } seconds && seconds < bestSeconds)
-            {
-                best = candidate;
-                bestSeconds = seconds;
-            }
-        }
-
-        // Nobody in battle: go to whoever finished a battle and has to start the next one.
-        return best ?? (waitingAfterBattle is not null ? NextReady(open, current, waitingAfterBattle) : null);
-    }
-
-    /// <summary>
     /// Seconds until the slot's character can act: 0 when the action meter is full, otherwise
     /// (1 - meter) × action interval. Null when the meter or interval is not current (e.g. not in battle).
     /// </summary>
@@ -114,17 +50,6 @@ public static class SlotNavigator
             ? (1 - meter.Value) * interval.Value / 1000
             : null;
     }
-
-    /// <summary>
-    /// The character finished a battle (this session) and is now known to be out of battle: the player has to start the
-    /// next fight, so Space should come here once nobody in battle is READY.
-    /// </summary>
-    public static bool IsWaitingAfterBattle(SlotState state, FreshnessPolicy freshness, DateTimeOffset now) =>
-        state.Battles.LastBattleAt is not null && freshness.Current(state.Character.InBattle, now) is { Value: false };
-
-    /// <summary>A slot is ready when its action meter is current and full (discovery D4, spec §10.3).</summary>
-    public static bool IsReady(SlotState state, FreshnessPolicy freshness, DateTimeOffset now) =>
-        freshness.Current(state.Character.ActionMeter, now) is { Value: >= 1 };
 
     private static int IndexOf(IReadOnlyList<SlotId> open, SlotId slot)
     {

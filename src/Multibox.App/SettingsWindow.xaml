@@ -44,6 +44,18 @@
                     <TextBlock Style="{StaticResource Hint}" FontSize="11.5" Margin="0,8,0,0" Text="Change shortcuts under &quot;shortcuts&quot; in multibox.json." />
                 </StackPanel>
             </Border>
+
+            <!-- Troubleshooting tools, off for normal play -->
+            <Border Background="{StaticResource CardBrush}" CornerRadius="10" Padding="16,14" Margin="0,14,0,0">
+                <StackPanel>
+                    <TextBlock Text="Advanced" FontSize="16" FontWeight="SemiBold" />
+                    <CheckBox Content="Developer tools" IsChecked="{Binding DeveloperTools}" Margin="0,8,0,0" />
+                    <TextBlock Style="{StaticResource Hint}" FontSize="11.5" Margin="28,2,0,0" TextWrapping="Wrap"
+                               Text="Live state window, soak log and browser task manager, for troubleshooting." />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="{Binding VersionText}" Style="{StaticResource Hint}" FontSize="11" Margin="0,12,0,0" />
         </StackPanel>
     </ScrollViewer>
 </Window>

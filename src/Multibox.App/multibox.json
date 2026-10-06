@@ -13,7 +13,6 @@
     "focusSlot": "{n}",
     "nextSlot": "Alt",
     "previousSlot": "",
-    "nextReady": "Space",
     "toggleFullscreen": "Alt+Enter"
   },
   "gameAspect": 1.7777778,

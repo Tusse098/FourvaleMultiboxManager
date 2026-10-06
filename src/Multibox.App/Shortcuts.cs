@@ -9,7 +9,6 @@ public enum ShortcutAction
     FocusSlot,
     NextSlot,
     PreviousSlot,
-    NextReady,
     ToggleFullscreen,
 }
 
@@ -22,7 +21,6 @@ public sealed class ShortcutConfig
     public string FocusSlot { get; init; } = "{n}";
     public string NextSlot { get; init; } = "Alt";
     public string PreviousSlot { get; init; } = "";
-    public string NextReady { get; init; } = "Space";
     public string ToggleFullscreen { get; init; } = "Alt+Enter";
 }
 
@@ -62,7 +60,7 @@ public readonly record struct KeyChord(ModifierKeys Modifiers, Key Key)
 /// <item>F-keys are rejected (discovery R3: they belong to the browser layer);</item>
 /// <item>duplicates are rejected.</item>
 /// </list>
-/// Plain-key shortcuts (e.g. <c>1</c>, <c>Space</c>) are not applied while a text field in the game has focus,
+/// Plain-key shortcuts (e.g. <c>1</c>) are not applied while a text field in the game has focus,
 /// so chat and login typing work (see <see cref="IsTypingSensitive"/>).
 /// </summary>
 public sealed class ShortcutMap
@@ -94,7 +92,6 @@ public sealed class ShortcutMap
 
         map.AddOptional(config.NextSlot, ShortcutAction.NextSlot);
         map.AddOptional(config.PreviousSlot, ShortcutAction.PreviousSlot);
-        map.AddOptional(config.NextReady, ShortcutAction.NextReady);
         map.AddOptional(config.ToggleFullscreen, ShortcutAction.ToggleFullscreen);
         return map;
     }

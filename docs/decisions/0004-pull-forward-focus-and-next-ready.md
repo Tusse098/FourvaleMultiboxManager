@@ -1,7 +1,7 @@
 # ADR 0004 — Pull focus switching and "next ready" forward into Phase 3
 
 - **Date:** 2026-10-01
-- **Status:** Accepted (player request). Shortcut keys and window chrome amended by ADR 0005.
+- **Status:** Accepted (player request). Shortcut keys and window chrome amended by ADR 0005. "Next ready" removed 2026-10-06 (ADR 0010).
 - **Phase:** 3 — Multi-session (soak test outstanding)
 
 ## Context
@@ -31,3 +31,7 @@ At the player's request, Space (ADR 0005) now uses `SlotNavigator.NextToAct`. A 
 - Phase 3 stays the current phase until the soak test passes.
 - Spec §15 criterion 3 (< 100 ms focus switch) can be measured early; formally it remains a Phase 5 criterion.
 - Tests: `SlotNavigatorTests` (Core), `ShortcutMapTests` (`tests/Multibox.App.Tests`).
+
+## Update 2026-10-06: "next ready" removed
+
+At the player's request the Space shortcut and everything behind it (`ShortcutAction.NextReady`, `SlotNavigator.NextReady`/`NextToAct`/`IsWaitingAfterBattle`/`IsReady`, the `nextReady` setting and their tests) were deleted (ADR 0010). Space now always goes to the game. Focus switching (`1`–`5`, `Alt`) and the overlay's action timer (`SlotNavigator.SecondsUntilReady`) stay.

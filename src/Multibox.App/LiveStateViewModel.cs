@@ -134,7 +134,7 @@ public sealed class SlotCardViewModel : Observable
         var meter = _freshness.Current(c.ActionMeter, now);
         HasMeter = meter is not null;
         MeterFraction = meter?.Value ?? 0;
-        var secondsLeft = SlotNavigator.SecondsUntilReady(state, _freshness, now); // same rule as Space (next to act)
+        var secondsLeft = SlotNavigator.SecondsUntilReady(state, _freshness, now); // (1 - meter) x action interval
         TimerText = meter is null
             ? ""
             : meter.Value >= 1

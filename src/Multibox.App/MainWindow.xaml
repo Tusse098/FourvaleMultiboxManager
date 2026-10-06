@@ -22,9 +22,9 @@
                     <Button Style="{StaticResource ChipButton}" Content="Settings" Click="OnShowSettings" />
                     <Button x:Name="FullscreenButton" Style="{StaticResource ChipButton}" Content="Fullscreen" Click="OnToggleFullscreen"
                             ToolTip="Borderless fullscreen (Alt+Enter). In fullscreen, touch the top edge of the screen to show this bar." />
-                    <Button Style="{StaticResource ChipButton}" Content="Live state window" Click="OnShowLiveState"
+                    <Button x:Name="LiveStateButton" Style="{StaticResource ChipButton}" Content="Live state window" Click="OnShowLiveState" Visibility="Collapsed"
                             ToolTip="Every slot's game state and the soak-test diagnostics, outside the game view" />
-                    <Button Style="{StaticResource ChipButton}" Content="Browser task manager" Click="OnTaskManager"
+                    <Button x:Name="TaskManagerButton" Style="{StaticResource ChipButton}" Content="Browser task manager" Click="OnTaskManager" Visibility="Collapsed"
                             ToolTip="Crash test: end one slot's process here and check that only that slot recovers" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">

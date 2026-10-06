@@ -52,7 +52,7 @@ public sealed class KeyRouter(ShortcutMap shortcuts)
 
         if (typing && ShortcutMap.IsTypingSensitive(modifiers))
         {
-            return new Decision(false, null, "typing"); // "1" or Space typed into chat or the login form.
+            return new Decision(false, null, "typing"); // "1" typed into chat or the login form.
         }
 
         // Auto-repeat comes from Windows' own flag, so a missed key release can never block a later, real press.

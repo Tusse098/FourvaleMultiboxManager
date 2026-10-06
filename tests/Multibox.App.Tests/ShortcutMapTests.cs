@@ -12,7 +12,6 @@ public class ShortcutMapTests
     [InlineData(ModifierKeys.None, Key.D1, ShortcutAction.FocusSlot, 1)]
     [InlineData(ModifierKeys.None, Key.D5, ShortcutAction.FocusSlot, 5)]
     [InlineData(ModifierKeys.None, Key.NumPad3, ShortcutAction.FocusSlot, 3)]
-    [InlineData(ModifierKeys.None, Key.Space, ShortcutAction.NextReady, 0)]
     [InlineData(ModifierKeys.Alt, Key.Enter, ShortcutAction.ToggleFullscreen, 0)]
     public void Default_bindings(ModifierKeys modifiers, Key key, ShortcutAction action, int slot)
     {
@@ -31,6 +30,7 @@ public class ShortcutMapTests
     [InlineData(ModifierKeys.None, Key.Tab)]     // game: chat tabs
     [InlineData(ModifierKeys.None, Key.Enter)]   // game: chat
     [InlineData(ModifierKeys.None, Key.D6)]      // only 5 slots
+    [InlineData(ModifierKeys.None, Key.Space)]   // Space is not an app shortcut
     [InlineData(ModifierKeys.Control, Key.D1)]   // Ctrl+1 is no longer bound
     [InlineData(ModifierKeys.Alt, Key.Tab)]      // Windows' own Alt+Tab
     public void Game_keys_and_unbound_chords_pass_through(ModifierKeys modifiers, Key key)
@@ -75,16 +75,16 @@ public class ShortcutMapTests
     [Fact]
     public void Empty_shortcut_disables_it()
     {
-        var map = ShortcutMap.Create(new ShortcutConfig { NextSlot = "", NextReady = "" }, 5);
+        var map = ShortcutMap.Create(new ShortcutConfig { NextSlot = "", ToggleFullscreen = "" }, 5);
 
         Assert.Null(map.MatchAltTap());
-        Assert.Null(map.Match(ModifierKeys.None, Key.Space));
+        Assert.Null(map.Match(ModifierKeys.Alt, Key.Enter));
     }
 
     [Fact]
     public void Duplicate_bindings_are_rejected()
     {
-        var config = new ShortcutConfig { NextSlot = "Space", NextReady = "Space" };
+        var config = new ShortcutConfig { NextSlot = "Space", PreviousSlot = "Space" };
 
         Assert.Throws<InvalidDataException>(() => ShortcutMap.Create(config, 5));
     }
@@ -92,7 +92,6 @@ public class ShortcutMapTests
     [Fact]
     public void Shortcuts_are_described_for_tooltips()
     {
-        Assert.Equal("Space", Defaults.Describe(ShortcutAction.NextReady));
         Assert.Equal("Alt", Defaults.Describe(ShortcutAction.NextSlot));
         Assert.Equal("Alt+Enter", Defaults.Describe(ShortcutAction.ToggleFullscreen));
     }

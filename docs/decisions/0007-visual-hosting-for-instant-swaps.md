@@ -3,6 +3,7 @@
 - **Date:** 2026-10-01
 - **Status:** Accepted (player feedback: "switching flickers and doesn't feel instant enough")
 - **Amends:** ADR 0003 (WebView2 hosting in the app), ADR 0004 (Focus layout)
+- **Note 2026-10-06:** Space / "next ready" was removed on 2026-10-06 at the player's request (ADR 0010). The click and re-targeting fixes below apply to every shortcut.
 
 ## Context
 

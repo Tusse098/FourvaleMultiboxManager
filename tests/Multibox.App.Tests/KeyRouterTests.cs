@@ -24,11 +24,11 @@ public class KeyRouterTests
     {
         var router = NewRouter();
 
-        var first = router.OnKey(Key.Space, true, ModifierKeys.None, false);
-        var repeat1 = router.OnKey(Key.Space, true, ModifierKeys.None, false, isRepeat: true);
-        var repeat2 = router.OnKey(Key.Space, true, ModifierKeys.None, false, isRepeat: true);
-        router.OnKey(Key.Space, false, ModifierKeys.None, false);
-        var again = router.OnKey(Key.Space, true, ModifierKeys.None, false);
+        var first = router.OnKey(Key.D3, true, ModifierKeys.None, false);
+        var repeat1 = router.OnKey(Key.D3, true, ModifierKeys.None, false, isRepeat: true);
+        var repeat2 = router.OnKey(Key.D3, true, ModifierKeys.None, false, isRepeat: true);
+        router.OnKey(Key.D3, false, ModifierKeys.None, false);
+        var again = router.OnKey(Key.D3, true, ModifierKeys.None, false);
 
         Assert.NotNull(first.Action);
         Assert.Equal(new KeyRouter.Decision(true, null), repeat1);
@@ -56,7 +56,7 @@ public class KeyRouterTests
         var router = NewRouter();
 
         Assert.Equal(new KeyRouter.Decision(false, null, "typing"), router.OnKey(Key.D1, true, ModifierKeys.None, typing: true));
-        Assert.Equal(new KeyRouter.Decision(false, null, "typing"), router.OnKey(Key.Space, true, ModifierKeys.None, typing: true));
+        Assert.Equal(new KeyRouter.Decision(false, null, "typing"), router.OnKey(Key.D3, true, ModifierKeys.None, typing: true));
         Assert.Equal(new KeyRouter.Decision(false, null), router.OnKey(Key.D1, false, ModifierKeys.None, typing: true));
     }
 

@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -41,7 +40,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _swapTimer;
     private int? _largeSlot;
     private readonly DateTimeOffset _startedAt = DateTimeOffset.UtcNow;
-    private readonly SoakRecorder _soak;
+    private SoakRecorder? _soak;
     private BrowserProcessMetrics? _metrics;
     private BrowserProcessMetrics.Snapshot? _lastMetrics;
     private readonly KeyRouter _router;
@@ -54,7 +53,6 @@ public partial class MainWindow : Window
     private bool _fullscreen;
     private int? _focused;
     private string? _lastPassNote;
-    private DateTimeOffset _lastRead = DateTimeOffset.UtcNow;
     private bool _closing;
     private bool _restoring;
 
@@ -73,8 +71,6 @@ public partial class MainWindow : Window
         _log = new Log(
             Path.Combine(AppConfig.DataRoot, "logs", $"app-{DateTime.Now:yyyyMMdd}.log"),
             message => { var n = 0; return redactor.RedactString(message, ref n); });
-        _soak = new SoakRecorder(Path.Combine(AppConfig.DataRoot, "soak"), _startedAt);
-        _liveState.SoakFile = $"Soak log: {_soak.FilePath}";
 
         for (var number = 1; number <= _config.SlotCount; number++)
         {
@@ -90,12 +86,11 @@ public partial class MainWindow : Window
             Help(_shortcuts.Describe(ShortcutAction.FocusSlot).Replace("1", "1…" + _config.SlotCount, StringComparison.Ordinal), "focus a slot"),
             Help(_shortcuts.Describe(ShortcutAction.NextSlot), "next slot"),
             Help(_shortcuts.Describe(ShortcutAction.PreviousSlot), "previous slot"),
-            Help(_shortcuts.Describe(ShortcutAction.NextReady), "character that acts next (READY first, else the lowest timer; when nobody fights, whoever just finished a battle)"),
             Help(_shortcuts.Describe(ShortcutAction.ToggleFullscreen), "fullscreen"),
             "Plain-key shortcuts are off while you type in chat or a login field.",
         }.Where(l => l.Length > 0));
 
-        _settings = new SettingsViewModel(_liveState.ShortcutHelp, _config.OverlayOpacity, OnOverlaySettingsChanged);
+        _settings = new SettingsViewModel(_liveState.ShortcutHelp, _config.OverlayOpacity, OnSettingsChanged);
         _overlay = new OverlayViewModel(_liveState.Cards, _config.OverlayOpacity, () => _settings.SetMode(OverlayMode.Off), SaveSettings);
         _overlayWindow = new OverlayWindow(_overlay) { Owner = null };
         _overlayWindow.RowClicked += card => FocusSlot(card.Session.Id.Number);
@@ -131,12 +126,16 @@ public partial class MainWindow : Window
         _liveState.Layout = settings.Layout;
         _overlaySettings = settings.Overlay;
         _overlay.IsMinimized = settings.Overlay.Minimized;
-        _settings.Load(settings.Overlay, _config.OverlayOpacity);
+        _settings.Load(settings.Overlay, _config.OverlayOpacity, settings.DeveloperTools);
         ApplyOverlayOptions();
-        ShowLiveWindow();
+        ApplyDeveloperTools();
+        if (_settings.DeveloperTools)
+        {
+            ShowLiveWindow();
+        }
+
         _readTimer.Start();
         _metricsTimer.Start();
-        _soakTimer.Start();
 
         // One after another: the first creates the shared browser process, the rest join it.
         _restoring = true;
@@ -329,33 +328,6 @@ public partial class MainWindow : Window
 
                 break;
 
-            case ShortcutAction.NextReady:
-                // Whoever acts next: a READY character (cycling through them), otherwise the lowest timer.
-                // Read every slot first: the read tick can lag behind (e.g. while attack animations keep the UI busy),
-                // and a slot that just attacked must not still count as READY.
-                var now = DateTimeOffset.UtcNow;
-                var sinceRead = now - _lastRead;
-                foreach (var open in _open.Values)
-                {
-                    open.Session.Read(now);
-                }
-
-                var timers = OpenIds().ToDictionary(id => id, id => SlotNavigator.SecondsUntilReady(_store.Get(id), _freshness, now));
-                var waiting = OpenIds().Where(id => SlotNavigator.IsWaitingAfterBattle(_store.Get(id), _freshness, now)).ToHashSet();
-                var next = SlotNavigator.NextToAct(OpenIds(), Focused(), id => timers[id], waiting.Contains);
-                _log.Info(string.Create(CultureInfo.InvariantCulture,
-                    $"next to act -> {next?.ToString() ?? "none"} ({string.Join(", ", timers.Select(t => $"{t.Key} {(t.Value is { } v ? $"{v:0.0}s" : waiting.Contains(t.Key) ? "after battle" : "-")}"))}; last read {sinceRead.TotalMilliseconds:0} ms before)"));
-                if (next is { } target)
-                {
-                    FocusSlot(target.Number);
-                }
-                else
-                {
-                    ShowNotice("No character is in battle or waiting after one");
-                }
-
-                break;
-
             case ShortcutAction.ToggleFullscreen:
                 ToggleFullscreen();
                 break;
@@ -378,12 +350,40 @@ public partial class MainWindow : Window
 
     // ----- Party overlay -----
 
-    /// <summary>A Settings change: apply it to the overlay and save.</summary>
-    private void OnOverlaySettingsChanged()
+    /// <summary>A Settings change: apply it to the overlay and developer tools, and save.</summary>
+    private void OnSettingsChanged()
     {
         ApplyOverlayOptions();
+        ApplyDeveloperTools();
         UpdateOverlayVisibility(DateTimeOffset.UtcNow);
         SaveSettings();
+    }
+
+    /// <summary>
+    /// Developer tools on: the Live state window and browser task manager buttons, and the soak log.
+    /// Off (the default for players): neither, and the Live state window closes.
+    /// </summary>
+    private void ApplyDeveloperTools()
+    {
+        var on = _settings.DeveloperTools;
+        LiveStateButton.Visibility = TaskManagerButton.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        if (on && _soak is null)
+        {
+            _soak = new SoakRecorder(Path.Combine(AppConfig.DataRoot, "soak"), _startedAt);
+            _liveState.SoakFile = $"Soak log: {_soak.FilePath}";
+            _soakTimer.Start();
+            _log.Info("developer tools on");
+        }
+        else if (!on && _soak is not null)
+        {
+            WriteSoak();
+            _soakTimer.Stop();
+            _soak.Dispose();
+            _soak = null;
+            _liveState.SoakFile = "Soak log: off";
+            _liveWindow.Hide();
+            _log.Info("developer tools off");
+        }
     }
 
     private void ApplyOverlayOptions()
@@ -544,10 +544,9 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>The player clicked into a game: that slot now has the keyboard.</summary>
     /// <summary>
-    /// A game view got keyboard focus without a click in it, e.g. a late focus report from the slot the player just
-    /// left with Space. Keys must go to the focused slot, so give focus back to it instead of switching.
+    /// A game view got keyboard focus without a click in it, e.g. a late focus report from the slot the player
+    /// just left. Keys must go to the focused slot, so give focus back to it instead of switching.
     /// </summary>
     private void OnGameFocused(int number)
     {
@@ -644,7 +643,11 @@ public partial class MainWindow : Window
     {
         if (!_restoring)
         {
-            AppSettingsStore.Save(new AppSettings(_open.Keys.ToList(), _liveState.Layout, _focused) { Overlay = CurrentOverlaySettings() });
+            AppSettingsStore.Save(new AppSettings(_open.Keys.ToList(), _liveState.Layout, _focused)
+            {
+                Overlay = CurrentOverlaySettings(),
+                DeveloperTools = _settings.DeveloperTools,
+            });
         }
     }
 
@@ -718,7 +721,6 @@ public partial class MainWindow : Window
     private void Tick()
     {
         var now = DateTimeOffset.UtcNow;
-        _lastRead = now;
         foreach (var slot in _open.Values)
         {
             slot.Session.Read(now);
@@ -761,7 +763,7 @@ public partial class MainWindow : Window
     private void WriteSoak()
     {
         var now = DateTimeOffset.UtcNow;
-        _soak.Write(now, _open.Values.Select(s => (_store.Get(s.Session.Id), s.Session.Recoveries)), _freshness, _isolation.Violations, _lastMetrics);
+        _soak?.Write(now, _open.Values.Select(s => (_store.Get(s.Session.Id), s.Session.Recoveries)), _freshness, _isolation.Violations, _lastMetrics);
     }
 
     private void ShowLiveWindow()
@@ -799,7 +801,7 @@ public partial class MainWindow : Window
             slot.Session.Dispose();
         }
 
-        _soak.Dispose();
+        _soak?.Dispose();
         _log.Info($"app closed; isolation violations {_isolation.Violations}");
         _log.Dispose();
         _liveWindow.Close();

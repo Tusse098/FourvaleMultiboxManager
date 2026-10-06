@@ -3,6 +3,7 @@
 - **Date:** 2026-10-01
 - **Status:** Accepted
 - **Amends:** ADR 0005 (how plain-key shortcuts are seen)
+- **Note 2026-10-06:** Space / "next ready" was removed on 2026-10-06 at the player's request (ADR 0010).
 
 ## Context
 

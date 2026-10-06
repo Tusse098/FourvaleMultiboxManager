@@ -85,7 +85,7 @@ Method: capture tool with the live **Decoded state** view (player reports it "wo
 
 - After a slot sends `action` (`{type: 'attack', targetId}`), its own `actionMeter` drops to 0 in the next patch, **50–110 ms** later (all 49 attacks in the 14:15 and 14:40 captures).
 - In a party battle every member's meter then **stops for about 2 s** (attack animation): no meter patches, values unchanged, then they resume. The overlay timers pause with them.
-- So a "Space doesn't switch yet" delay after attacking is not in the game data. Most likely cause: the app's read tick lagging behind (fix: Space reads all slots before deciding, ADR 0009 update).
+- So a "Space doesn't switch yet" delay after attacking is not in the game data. Most likely cause: the app's read tick lagging behind (fix: Space reads all slots before deciding, ADR 0009 update). *2026-10-06: the Space feature was removed (ADR 0010).*
 
 ## Spec §17 questions
 

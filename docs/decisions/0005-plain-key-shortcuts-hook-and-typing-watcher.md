@@ -3,6 +3,7 @@
 - **Date:** 2026-10-01
 - **Status:** Accepted (player request)
 - **Amends:** ADR 0004 (the shortcut keys)
+- **Note 2026-10-06:** Space / "next ready" was removed on 2026-10-06 at the player's request (ADR 0010). References to `Space` below are history.
 - **Amended by:** ADR 0009. The system-wide keyboard hook was replaced by an in-process message filter, because antivirus software blocks the hook as a keylogger.
 
 ## Context

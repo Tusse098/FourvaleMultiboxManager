@@ -5,7 +5,7 @@ namespace Multibox.Hosting;
 
 /// <summary>
 /// Tells the host whether a text field (chat, login form) has focus in a slot's page, so plain-key shortcuts
-/// such as <c>1</c> or <c>Space</c> are not taken while the player is typing. ADR 0005.
+/// such as <c>1</c> are not taken while the player is typing. ADR 0005.
 /// <para>
 /// Read-only page script (spec §7.1 option 2, hard rule 5): it listens for focus changes, re-checks twice a second,
 /// and posts one boolean when it changes.

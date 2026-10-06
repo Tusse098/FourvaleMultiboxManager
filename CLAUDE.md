@@ -14,7 +14,7 @@ Target: https://fourvale.com/ (beta). Fourvale is the only source of truth for h
 
 > Update this line when a phase's exit criteria pass.
 
-**Phase 3 — Multi-session.** Phase 2 exit criteria met on 2026-10-01 (`docs/phase2-poc.md`). Open in Phase 3: the 2-hour soak (criteria 2, 5, 8) and the RAM/CPU budget (`docs/phase3-multisession.md`). Pulled forward on request (ADR 0004, 0005): Grid/Focus layouts, plain-key focus shortcuts via a keyboard hook (with a read-only typing watcher), "next ready", borderless fullscreen; party overlay with battle totals (ADR 0008); nothing else from later phases. Multi-accounting confirmed allowed (2026-10-01). **Input mirroring is not allowed** (`docs/policy.md` §5a, 2026-10-01): removed from the code; Phase 8 is skipped (spec §12.3). Do not build any form of input mirroring or broadcasting. No app shortcuts on F-keys.
+**Phase 3 — Multi-session.** Phase 2 exit criteria met on 2026-10-01 (`docs/phase2-poc.md`). Open in Phase 3: the 2-hour soak (criteria 2, 5, 8) and the RAM/CPU budget (`docs/phase3-multisession.md`). Pulled forward on request (ADR 0004, 0005): Grid/Focus layouts, plain-key focus shortcuts via an in-process message filter (ADR 0009, with a read-only typing watcher), borderless fullscreen; party overlay with battle totals (ADR 0008); public release build, player README and a Developer tools setting (ADR 0010, from Phase 9); nothing else from later phases. "Next ready" on Space was removed on 2026-10-06 (ADR 0010); do not re-add it. Multi-accounting confirmed allowed (2026-10-01). **Input mirroring is not allowed** (`docs/policy.md` §5a, 2026-10-01): removed from the code; Phase 8 is skipped (spec §12.3). Do not build any form of input mirroring or broadcasting. No app shortcuts on F-keys.
 
 Work only on the current phase. Do not build ahead (e.g. no dashboard UI during discovery, no mirroring before Phase 8).
 
@@ -80,7 +80,8 @@ dotnet build FourvaleMultibox.slnx
 dotnet test FourvaleMultibox.slnx
 dotnet run --project tools/Fourvale.Capture      # Phase 1 capture tool
 dotnet run --project tools/Fourvale.Replay -- <capture.jsonl> [--schema] [--self] [--state <seconds>]
-dotnet run --project src/Multibox.App            # the app (slots from multibox.json + Live state window)
+dotnet run --project src/Multibox.App            # the app (Live state window: Settings > Developer tools)
+powershell -ExecutionPolicy Bypass -File tools\scripts\publish.ps1   # tests + self-contained release zip in artifacts\
 ```
 
 Do not run the app and the capture tool at the same time: they share the WebView2 profile folder.

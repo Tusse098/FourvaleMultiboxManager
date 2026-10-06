@@ -110,3 +110,4 @@ Conditions:
 | 2026-10-01 | Player confirmed multi-accounting is allowed; G1 closed for multi-accounting. Tools and mirroring are still unconfirmed. |
 | 2026-10-01 | Tier B: Fourvale's position on mirroring still unknown; the player accepted the risk for Ctrl+click mirroring under spec §12.3 conditions (§5b, ADR 0006). |
 | 2026-10-01 | Mirroring reported not allowed. Click mirroring removed (code, build flag, settings, script). Phase 8 skipped (spec §12.3). |
+| 2026-10-06 | Re-verified before the first public release: no Ctrl+click or mirroring code remains (ADR 0010). |
