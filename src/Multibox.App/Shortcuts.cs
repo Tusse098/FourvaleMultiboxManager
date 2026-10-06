@@ -13,12 +13,15 @@ public enum ShortcutAction
 }
 
 /// <summary>
-/// Shortcut settings from multibox.json. <c>focusSlot</c> contains <c>{n}</c>, replaced by each slot number.
-/// <c>"Alt"</c> alone means tapping Alt (press and release with no other key). An empty string disables a shortcut.
+/// Shortcut settings: the defaults come from multibox.json, the player's own choices from Settings (saved in
+/// app-settings.json). <c>focusSlot</c> contains <c>{n}</c>, replaced by each slot number; <c>focusSlots</c>, when set,
+/// gives each slot its own key instead (index 0 = slot 1). <c>"Alt"</c> alone means tapping Alt (press and release with
+/// no other key). An empty string disables a shortcut.
 /// </summary>
-public sealed class ShortcutConfig
+public sealed record ShortcutConfig
 {
     public string FocusSlot { get; init; } = "{n}";
+    public List<string>? FocusSlots { get; init; }
     public string NextSlot { get; init; } = "Alt";
     public string PreviousSlot { get; init; } = "";
     public string ToggleFullscreen { get; init; } = "Alt+Enter";
@@ -69,32 +72,53 @@ public sealed class ShortcutMap
     public static IReadOnlySet<Key> GameKeys { get; } = new HashSet<Key> { Key.Q, Key.I, Key.C, Key.M, Key.Enter, Key.Escape, Key.Tab, Key.Left, Key.Right };
 
     private readonly Dictionary<KeyChord, (ShortcutAction Action, int Slot)> _map = [];
+    private readonly HashSet<KeyChord> _numPadCopies = [];
 
     public IReadOnlyDictionary<KeyChord, (ShortcutAction Action, int Slot)> Bindings => _map;
 
     public static ShortcutMap Create(ShortcutConfig config, int slotCount)
     {
         var map = new ShortcutMap();
-        if (!string.IsNullOrWhiteSpace(config.FocusSlot))
+        var slotChords = new List<(KeyChord Chord, int Slot)>();
+        for (var n = 1; n <= slotCount; n++)
         {
-            for (var n = 1; n <= slotCount; n++)
+            var text = FocusSlotText(config, n);
+            if (!string.IsNullOrWhiteSpace(text))
             {
-                var chord = Parse(config.FocusSlot.Replace("{n}", n.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal));
+                var chord = Parse(text);
                 map.Add(chord, ShortcutAction.FocusSlot, n);
-
-                // The numeric keypad digit does the same as the top-row digit.
-                if (chord.Key is >= Key.D1 and <= Key.D9)
-                {
-                    map.Add(chord with { Key = Key.NumPad0 + (chord.Key - Key.D0) }, ShortcutAction.FocusSlot, n);
-                }
+                slotChords.Add((chord, n));
             }
         }
 
         map.AddOptional(config.NextSlot, ShortcutAction.NextSlot);
         map.AddOptional(config.PreviousSlot, ShortcutAction.PreviousSlot);
         map.AddOptional(config.ToggleFullscreen, ShortcutAction.ToggleFullscreen);
+
+        // The numeric keypad digit does the same as a top-row digit, unless that keypad key has its own binding.
+        foreach (var (chord, slot) in slotChords.Where(c => c.Chord.Key is >= Key.D1 and <= Key.D9))
+        {
+            var copy = chord with { Key = Key.NumPad0 + (chord.Key - Key.D0) };
+            if (map._map.TryAdd(copy, (ShortcutAction.FocusSlot, slot)))
+            {
+                map._numPadCopies.Add(copy);
+            }
+        }
+
         return map;
     }
+
+    /// <summary>The configured text for focusing slot <paramref name="slot"/> (1-based): its own entry, else the pattern.</summary>
+    public static string FocusSlotText(ShortcutConfig config, int slot) =>
+        config.FocusSlots is { } list
+            ? (slot <= list.Count ? list[slot - 1] : "")
+            : string.IsNullOrWhiteSpace(config.FocusSlot) ? "" : config.FocusSlot.Replace("{n}", slot.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+
+    /// <summary>The key bound to focusing <paramref name="slot"/>, without the automatic keypad copy; empty when unbound.</summary>
+    public string DescribeSlot(int slot) =>
+        _map.Where(p => p.Value == (ShortcutAction.FocusSlot, slot) && !_numPadCopies.Contains(p.Key))
+            .Select(p => p.Key.ToString())
+            .FirstOrDefault() ?? "";
 
     /// <summary>The bound action for a key press (not an Alt tap), or null to let the key through to the game.</summary>
     public (ShortcutAction Action, int Slot)? Match(ModifierKeys modifiers, Key key) =>
@@ -112,7 +136,7 @@ public sealed class ShortcutMap
         (modifiers & (ModifierKeys.Control | ModifierKeys.Alt)) == ModifierKeys.None;
 
     public string Describe(ShortcutAction action) =>
-        _map.Where(p => p.Value.Action == action && p.Key.Key is not (>= Key.NumPad0 and <= Key.NumPad9))
+        _map.Where(p => p.Value.Action == action && !_numPadCopies.Contains(p.Key))
             .Select(p => p.Key.ToString())
             .FirstOrDefault() ?? "";
 
@@ -128,7 +152,7 @@ public sealed class ShortcutMap
     {
         if (!_map.TryAdd(chord, (action, slot)))
         {
-            throw new InvalidDataException($"multibox.json: shortcut {chord} is bound twice.");
+            throw new InvalidDataException($"{chord} is used for two shortcuts.");
         }
     }
 
@@ -146,13 +170,13 @@ public sealed class ShortcutMap
                 default:
                     if (key is not null)
                     {
-                        throw new InvalidDataException($"multibox.json: shortcut '{text}' has more than one key.");
+                        throw new InvalidDataException($"Shortcut '{text}' has more than one key.");
                     }
 
                     key = raw.Length == 1 && char.IsDigit(raw[0])
                         ? Key.D0 + (raw[0] - '0')
                         : Enum.TryParse<Key>(raw, ignoreCase: true, out var parsed) && parsed != Key.None ? parsed
-                        : throw new InvalidDataException($"multibox.json: unknown key '{raw}' in shortcut '{text}'.");
+                        : throw new InvalidDataException($"Unknown key '{raw}' in shortcut '{text}'.");
                     break;
             }
         }
@@ -161,17 +185,17 @@ public sealed class ShortcutMap
         {
             return modifiers == ModifierKeys.Alt
                 ? KeyChord.AltTap
-                : throw new InvalidDataException($"multibox.json: shortcut '{text}' has no key (only \"Alt\" may stand alone).");
+                : throw new InvalidDataException($"Shortcut '{text}' has no key; only Alt may be used on its own.");
         }
 
         if (key is >= Key.F1 and <= Key.F24)
         {
-            throw new InvalidDataException($"multibox.json: shortcut '{text}' uses an F-key; F-keys are not allowed (discovery R3).");
+            throw new InvalidDataException($"F-keys can't be used: the game's browser uses them (discovery R3).");
         }
 
         if (modifiers is ModifierKeys.None or ModifierKeys.Shift && GameKeys.Contains(key.Value))
         {
-            throw new InvalidDataException($"multibox.json: shortcut '{text}' would take a key the game uses; add Ctrl or Alt.");
+            throw new InvalidDataException($"{new KeyChord(modifiers, key.Value)} is a key the game uses; add Ctrl or Alt.");
         }
 
         return new KeyChord(modifiers, key.Value);

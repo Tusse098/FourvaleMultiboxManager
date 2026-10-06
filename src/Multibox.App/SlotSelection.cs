@@ -74,6 +74,9 @@ public sealed record AppSettings(List<int> OpenSlots, PanelLayout Layout, int? F
 
     /// <summary>Live state window, soak log and browser task manager, for troubleshooting. Off for normal players.</summary>
     public bool DeveloperTools { get; init; }
+
+    /// <summary>The player's own shortcuts from Settings; null = the defaults in multibox.json.</summary>
+    public ShortcutConfig? Shortcuts { get; init; }
 }
 
 /// <summary>

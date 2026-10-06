@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -26,7 +27,9 @@ public partial class MainWindow : Window
     private readonly AdapterRules _rules;
     private readonly Redactor _redactor;
     private readonly FreshnessPolicy _freshness;
-    private readonly ShortcutMap _shortcuts;
+    private ShortcutMap _shortcuts;
+    private ShortcutConfig? _userShortcuts;
+    private readonly ShortcutsViewModel _shortcutEditor;
     private readonly StateStore _store = new();
     private readonly IsolationMonitor _isolation;
     private readonly Log _log;
@@ -43,7 +46,7 @@ public partial class MainWindow : Window
     private SoakRecorder? _soak;
     private BrowserProcessMetrics? _metrics;
     private BrowserProcessMetrics.Snapshot? _lastMetrics;
-    private readonly KeyRouter _router;
+    private KeyRouter _router;
     private readonly SettingsViewModel _settings;
     private readonly OverlayViewModel _overlay;
     private readonly OverlayWindow _overlayWindow;
@@ -81,16 +84,10 @@ public partial class MainWindow : Window
         _liveState.SetGridLayout = new RelayCommand(() => SetLayout(PanelLayout.Grid));
         _liveState.SetFocusLayout = new RelayCommand(() => SetLayout(PanelLayout.Focus));
         _router = new KeyRouter(_shortcuts);
-        _liveState.ShortcutHelp = string.Join("\n", new[]
-        {
-            Help(_shortcuts.Describe(ShortcutAction.FocusSlot).Replace("1", "1…" + _config.SlotCount, StringComparison.Ordinal), "focus a slot"),
-            Help(_shortcuts.Describe(ShortcutAction.NextSlot), "next slot"),
-            Help(_shortcuts.Describe(ShortcutAction.PreviousSlot), "previous slot"),
-            Help(_shortcuts.Describe(ShortcutAction.ToggleFullscreen), "fullscreen"),
-            "Plain-key shortcuts are off while you type in chat or a login field.",
-        }.Where(l => l.Length > 0));
+        UpdateShortcutHelp();
 
-        _settings = new SettingsViewModel(_liveState.ShortcutHelp, _config.OverlayOpacity, OnSettingsChanged);
+        _shortcutEditor = new ShortcutsViewModel(_config.SlotCount, _config.Shortcuts, OnShortcutsChanged);
+        _settings = new SettingsViewModel(_shortcutEditor, _config.OverlayOpacity, OnSettingsChanged);
         _overlay = new OverlayViewModel(_liveState.Cards, _config.OverlayOpacity, () => _settings.SetMode(OverlayMode.Off), SaveSettings);
         _overlayWindow = new OverlayWindow(_overlay) { Owner = null };
         _overlayWindow.RowClicked += card => FocusSlot(card.Session.Id.Number);
@@ -127,6 +124,11 @@ public partial class MainWindow : Window
         _overlaySettings = settings.Overlay;
         _overlay.IsMinimized = settings.Overlay.Minimized;
         _settings.Load(settings.Overlay, _config.OverlayOpacity, settings.DeveloperTools);
+        if (settings.Shortcuts is { } saved)
+        {
+            LoadSavedShortcuts(saved);
+        }
+
         ApplyOverlayOptions();
         ApplyDeveloperTools();
         if (_settings.DeveloperTools)
@@ -228,6 +230,56 @@ public partial class MainWindow : Window
     // ----- Focus and shortcuts -----
 
     private static string Help(string keys, string what) => keys.Length == 0 ? "" : $"{keys}: {what}";
+
+    /// <summary>The top bar's shortcut tooltip, from the shortcuts in use.</summary>
+    private void UpdateShortcutHelp()
+    {
+        var slotKeys = Enumerable.Range(1, _config.SlotCount).Select(_shortcuts.DescribeSlot).ToList();
+        var digits = Enumerable.Range(1, _config.SlotCount).Select(n => n.ToString(CultureInfo.InvariantCulture));
+        var focusKeys = slotKeys.SequenceEqual(digits)
+            ? $"1…{_config.SlotCount}"
+            : string.Join(", ", slotKeys.Select((k, i) => $"{(k.Length == 0 ? "-" : k)} (slot {i + 1})"));
+
+        _liveState.ShortcutHelp = string.Join("\n", new[]
+        {
+            Help(slotKeys.All(k => k.Length == 0) ? "" : focusKeys, "focus a slot"),
+            Help(_shortcuts.Describe(ShortcutAction.NextSlot), "next slot"),
+            Help(_shortcuts.Describe(ShortcutAction.PreviousSlot), "previous slot"),
+            Help(_shortcuts.Describe(ShortcutAction.ToggleFullscreen), "fullscreen"),
+            "Shortcuts without Ctrl or Alt are off while you type in chat or a login field. Change them in Settings.",
+        }.Where(l => l.Length > 0));
+    }
+
+    /// <summary>Shortcuts saved by the player in an earlier session; refused (logged) if they are no longer valid.</summary>
+    private void LoadSavedShortcuts(ShortcutConfig saved)
+    {
+        try
+        {
+            UseShortcuts(saved);
+            _shortcutEditor.Load(saved);
+        }
+        catch (InvalidDataException ex)
+        {
+            _log.Warning($"saved shortcuts ignored, using the defaults: {ex.Message}");
+        }
+    }
+
+    /// <summary>The player changed a shortcut in Settings (null = back to the defaults): use it now and save it.</summary>
+    private void OnShortcutsChanged(ShortcutConfig? custom)
+    {
+        UseShortcuts(custom);
+        SaveSettings();
+    }
+
+    private void UseShortcuts(ShortcutConfig? custom)
+    {
+        var map = ShortcutMap.Create(custom ?? _config.Shortcuts, _config.SlotCount); // throws if invalid: nothing changes
+        _shortcuts = map;
+        _router = new KeyRouter(map);
+        _userShortcuts = custom;
+        UpdateShortcutHelp();
+        _log.Info($"shortcuts: {(custom is null ? "defaults" : "custom")}; {_liveState.ShortcutHelp.Split('\n')[0]}");
+    }
 
     /// <summary>Where Windows' keyboard focus is (diagnostics for "shortcuts stopped"); window handles and class names only.</summary>
     private void LogKeyboardFocus()
@@ -647,6 +699,7 @@ public partial class MainWindow : Window
             {
                 Overlay = CurrentOverlaySettings(),
                 DeveloperTools = _settings.DeveloperTools,
+                Shortcuts = _userShortcuts,
             });
         }
     }

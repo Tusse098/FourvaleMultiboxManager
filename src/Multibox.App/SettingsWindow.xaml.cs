@@ -2,11 +2,12 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Input;
 
 namespace Multibox.App;
 
-/// <summary>Settings shown in <see cref="SettingsWindow"/>: party overlay options, the keyboard reference and developer tools.</summary>
-public sealed class SettingsViewModel(string shortcutHelp, double defaultOpacity, Action changed) : Observable
+/// <summary>Settings shown in <see cref="SettingsWindow"/>: party overlay options, shortcuts and developer tools.</summary>
+public sealed class SettingsViewModel(ShortcutsViewModel shortcuts, double defaultOpacity, Action changed) : Observable
 {
     private OverlayMode _mode = OverlayMode.InBattle;
     private bool _clickThrough = true;
@@ -14,7 +15,7 @@ public sealed class SettingsViewModel(string shortcutHelp, double defaultOpacity
     private double _opacityPercent = Math.Round(defaultOpacity * 100);
     private bool _developerTools;
 
-    public string ShortcutHelp { get; } = shortcutHelp;
+    public ShortcutsViewModel Shortcuts { get; } = shortcuts;
 
     public string VersionText { get; } =
         $"Version {typeof(SettingsViewModel).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "?"}";
@@ -102,11 +103,28 @@ public sealed class SettingsViewModel(string shortcutHelp, double defaultOpacity
 
 public partial class SettingsWindow : Window
 {
+    private readonly ShortcutsViewModel _shortcuts;
+
     public SettingsWindow(SettingsViewModel viewModel)
     {
         InitializeComponent();
         DataContext = viewModel;
+        _shortcuts = viewModel.Shortcuts;
+
+        // While a shortcut is being changed, keys typed into this window become the new shortcut.
+        PreviewKeyDown += (_, e) => e.Handled = _shortcuts.OnKeyDown(RealKey(e), Keyboard.Modifiers);
+        PreviewKeyUp += (_, e) => e.Handled = _shortcuts.OnKeyUp(RealKey(e));
+        Deactivated += (_, _) => _shortcuts.CancelCapture();
+        IsVisibleChanged += (_, _) => _shortcuts.CancelCapture();
     }
+
+    /// <summary>With Alt held, WPF reports <see cref="Key.System"/> and the real key in <see cref="KeyEventArgs.SystemKey"/>.</summary>
+    private static Key RealKey(KeyEventArgs e) => e.Key switch
+    {
+        Key.System => e.SystemKey,
+        Key.ImeProcessed => e.ImeProcessedKey,
+        _ => e.Key,
+    };
 
     // Closing only hides it; the main window can show it again.
     protected override void OnClosing(CancelEventArgs e)

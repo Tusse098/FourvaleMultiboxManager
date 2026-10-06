@@ -344,7 +344,7 @@ Saved in `%AppData%\FourvaleMultibox\` as JSON:
 
 Never saved: passwords, cookies, tokens, auth headers, captured game messages (except sanitised fixtures in the dev repo).
 
-WebView2 profile data (which includes the game's own login cookies) lives in the profile folder managed by WebView2, not in the app's config. Users can sign out or delete a slot's profile from the app.
+WebView2 profile data (which includes the game's own login cookies) lives in the profile folder managed by WebView2, not in the app's config. ~~Users can sign out or delete a slot's profile from the app.~~ *Spec change 2026-10-06 (ADR 0012): not built; players log out inside the game or delete the slot's profile folder.*
 
 ---
 

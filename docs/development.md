@@ -7,7 +7,8 @@ Working rules (hard rules, architecture boundaries, current phase) are in [`CLAU
 ## Requirements
 
 - Windows 10 1809 or later
-- [.NET 10 SDK](https://dotnet.microsoft.com/)
+- [.NET 10 SDK](https://dotnet.microsoft.com/), stable **10.0.401 or newer**. `global.json` pins it and refuses
+  preview SDKs, so every build (yours, CI, releases) uses a released compiler: `winget install Microsoft.DotNet.SDK.10`
 - Microsoft Edge WebView2 Runtime (included with current Windows)
 
 ## Build, test, run
@@ -31,7 +32,9 @@ The exe is not code-signed, so Windows SmartScreen warns on first start.
 
 ## Configuration
 
-`src/Multibox.App/multibox.json`: slots, shortcuts, freshness limits, layout and overlay defaults.
+`src/Multibox.App/multibox.json`: slots, default shortcuts, freshness limits, layout and overlay defaults. Players change
+shortcuts in Settings; their choices are saved in `app-settings.json` (`Shortcuts`; absent = the defaults) and win over
+`multibox.json`.
 `src/Fourvale.Adapter/fourvale-adapter.json`: what network traffic is observed and how it is redacted.
 
 The app stores its own data under `%LocalAppData%\FourvaleMultibox\` (browser profiles, logs, soak CSVs) and

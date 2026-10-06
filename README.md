@@ -6,9 +6,9 @@ A Windows app for playing several [Fourvale](https://fourvale.com/) accounts at 
 
 ## Features
 
-- **2–5 accounts side by side**, each with its own login that is remembered between starts.
+- **2–5 accounts side by side**, each with its own login that is remembered between starts (see [Testing status](#testing-status) for 4 or more).
 - **Layouts:** *Grid* (equal tiles, as large as the screen allows) and *Focus* (one large game plus small live tiles). Every game keeps running.
-- **Keyboard:** `1`–`5` focus a slot, `Alt` moves to the next slot, `Alt+Enter` toggles borderless fullscreen. Shortcuts are off while you type in chat or a login field.
+- **Keyboard:** `1`–`5` focus a slot, `Alt` moves to the next slot, `Alt+Enter` toggles borderless fullscreen. All of them can be changed in Settings. Shortcuts are off while you type in chat or a login field.
 - **Party overlay:** HP, SP and the action timer of every character, on top of the game. Transparent and click-through; shown only in battle, always, or never.
 
 ## Download and start
@@ -21,11 +21,20 @@ Windows may show *"Windows protected your PC"* because the app is not code-signe
 
 Requires Windows 10 (1809) or later with the Microsoft Edge WebView2 Runtime, which current Windows already includes. No other installs are needed.
 
+If something goes wrong, the app shows a message instead of closing silently, and saves the details in `%LocalAppData%\FourvaleMultibox\logs\` (a `crash-…` file). Attach that file when you report a bug; it contains no passwords or game data.
+
+## Testing status
+
+This is an early release. Fourvale is in beta too, and an update to the game can break things.
+
+- **2–3 slots:** used regularly during development.
+- **4 or 5 slots: not tested extensively.** They should work, but long sessions with 4 or more slots have not been checked for stability, memory and CPU use yet. Every slot is a full game in its own browser, so each one adds memory and CPU load. If you try it, a bug report with how it went is very welcome.
+
 ## First start
 
 1. Click a slot number (`1`–`5`) in the top bar to open a slot.
-2. Log in to Fourvale in that slot. Each slot has its own login and stays logged in after a restart (see [Accounts and logins](#accounts-and-logins)).
-3. Open more slots the same way. Close a slot with **✕** on its panel.
+2. Log in to Fourvale in that slot. Each slot has its own login and stays logged in when you restart the app, unless you log out or Fourvale logs you out (see [Accounts and logins](#accounts-and-logins)).
+3. Open more slots the same way. Close a slot with **✕** on its panel; **⟳** reloads it.
 4. Choose **Grid** or **Focus** in the top bar. Click a game, or press its number, to play in it.
 
 ## Controls
@@ -38,7 +47,7 @@ Requires Windows 10 (1809) or later with the Microsoft Edge WebView2 Runtime, wh
 | **Unstick keys** | If shortcuts stop working, this resets them |
 | **Overlay** / **Settings** | Party overlay options; untick *Click-through* to drag the overlay into place |
 
-Shortcuts can be changed under `"shortcuts"` in `multibox.json` next to the exe. F-keys and the game's own keys (Q, I, C, M, Enter, Esc, Tab, arrows) cannot be used without Ctrl or Alt.
+**Change the keys** in **Settings → Keyboard**: click a shortcut, then press the new key (Esc cancels, Backspace removes it). If the key is already used, the two shortcuts swap. Your keys are saved and kept after updates; **Reset to defaults** brings back the ones above. F-keys can't be used, and the game's own keys (Q, I, C, M, Enter, Esc, Tab, arrows) need Ctrl or Alt.
 
 ## Accounts and logins
 
@@ -46,16 +55,16 @@ Shortcuts can be changed under `"shortcuts"` in `multibox.json` next to the exe.
 
 - **What is saved:** the login session that Fourvale itself gives the browser after you log in (its cookies and site storage). It is saved in that slot's profile only, so slot 1 and slot 2 never share a login.
 - **What is not saved:** your password. The built-in browser's password saving is off, and the app does not read login traffic, so it never reaches the app or its logs.
-- **Which account is in which slot:** whichever account you logged in to in that slot. The app does not track or store account names; the slot simply stays logged in until Fourvale's session ends or you log out.
+- **Which account is in which slot:** whichever account you logged in to in that slot. The app does not track or store account names; the slot stays logged in, also across restarts of the app, until you log out or Fourvale logs you out.
 - **Where:** `%LocalAppData%\FourvaleMultibox\WebView2\EBWebView\WV2Profile_slot1` (and `…slot2`, `…slot3`, …). Paste `%LocalAppData%\FourvaleMultibox` into the File Explorer address bar to open it.
 
 **To switch accounts in a slot,** log out in the game and log in with the other account. **To remove a slot's login completely,** close the app and delete that slot's `WV2Profile_slotN` folder; the slot starts fresh, logged out, the next time you open it.
 
-Anyone who can use your Windows account can open the app and play the logged-in slots, the same as with a browser that remembers your logins. On a shared PC, delete the profile folders when you are done.
+Anyone who can use your Windows account can open the app and play the logged-in slots, the same as with a browser that remembers your logins. On a shared PC, log out in each slot when you are done.
 
 ## Other data
 
-- Settings (open slots, layout, overlay): `%AppData%\FourvaleMultibox\app-settings.json`
+- Settings (open slots, layout, overlay, your shortcuts): `%AppData%\FourvaleMultibox\app-settings.json`
 - Logs, with passwords and tokens removed: `%LocalAppData%\FourvaleMultibox\logs\`
 
 To remove everything, delete the app folder, `%LocalAppData%\FourvaleMultibox` and `%AppData%\FourvaleMultibox`.
