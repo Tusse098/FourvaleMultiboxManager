@@ -33,20 +33,22 @@ jobs:
           $version = "${{ github.ref_name }}".TrimStart('v')
           ./tools/scripts/publish.ps1 -ExpectedVersion $version
 
+      # bash: plain, predictable argument passing to gh. The tag comes in through env, not pasted into the script.
       - name: Create draft release
-        shell: pwsh
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
         run: |
-          $tag = "${{ github.ref_name }}"
-          $version = $tag.TrimStart('v')
-          $zip = "artifacts/FourvaleMultibox-$version-win-x64.zip"
+          set -euo pipefail
+          version="${TAG#v}"
+          zip="artifacts/FourvaleMultibox-${version}-win-x64.zip"
           # Upper case, as Get-FileHash prints it, so players can compare by eye.
-          $hash = (Get-Content "$zip.sha256").Split(' ')[0].ToUpperInvariant()
-          $notes = (Get-Content .github/release-notes.md -Raw -Encoding utf8).Replace('{VERSION}', $version).Replace('{SHA256}', $hash)
-          Set-Content release-notes.tmp.md $notes -Encoding utf8
+          hash=$(cut -d' ' -f1 "${zip}.sha256" | tr 'a-f' 'A-F')
+          sed -e "s/{VERSION}/${version}/g" -e "s/{SHA256}/${hash}/g" .github/release-notes.md > release-notes.tmp.md
           # A normal release becomes "Latest" (sidebar badge, /releases/latest link). Only a test version with a
-          # suffix, e.g. v0.3.0-test1 (and <Version>0.3.0-test1</Version>), is marked as a pre-release.
-          $extra = if ($version.Contains('-')) { @('--prerelease') } else { @('--latest') }
-          gh release create $tag $zip "$zip.sha256" --draft @extra --title $tag --notes-file release-notes.tmp.md --generate-notes --verify-tag
-          if ($LASTEXITCODE -ne 0) { throw 'Creating the draft release failed.' }
+          # suffix, e.g. v1.1.0-test1 (and <Version>1.1.0-test1</Version>), is marked as a pre-release.
+          if [[ "$version" == *-* ]]; then kind=--prerelease; else kind=--latest; fi
+          set -x # print the exact command in the log
+          gh release create "$TAG" "$zip" "${zip}.sha256" --draft "$kind" --title "$TAG" \
+            --notes-file release-notes.tmp.md --generate-notes --verify-tag
