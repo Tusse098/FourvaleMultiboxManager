@@ -323,10 +323,11 @@ Mirrors a single physical click or keypress to several sessions.
 
 ### 12.3 Kill switch
 
-- Build flag `EnableInputMirroring` (default **false**). Decided at the start of Phase 8 using `docs/policy.md` at that time:
+- *Settled 2026-10-01: input mirroring is not allowed (the Fourvale creator); Phase 8 is skipped and the rest of this section is history.*
+- Build flag `EnableInputMirroring` (default **false**). Decided at the start of Phase 8 using the policy known at that time:
   - **Explicitly permitted** (published rule or developer answer) → may be set to true.
   - **Prohibited** → stays false; Phase 8 is skipped.
-  - **Still unknown** → the player decides whether to accept the risk; the decision and date are recorded in `docs/policy.md`. The runtime toggle stays off by default either way.
+  - **Still unknown** → the player decides whether to accept the risk; the decision and date are recorded. The runtime toggle stays off by default either way.
 - Runtime setting, off by default even when the build flag is on.
 - If Fourvale's rules change to prohibit it, ship an update with the flag off. Do not leave a hidden way to re-enable it.
 
@@ -445,7 +446,7 @@ Only fields marked available with medium or high confidence are implemented.
 | Risk | Impact | Mitigation |
 |---|---|---|
 | Fourvale prohibits multi-accounting or tools | Project stops or shrinks | Phase 0 published-rules check; apply any later answer immediately |
-| Proceeding without developer confirmation | Account action during beta | Tier A only by default; mirroring re-checked at Phase 8; accepted risk recorded in `docs/policy.md` |
+| Proceeding without developer confirmation | Account action during beta | Tier A only by default; mirroring not allowed (settled 2026-10-01) |
 | Fourvale prohibits mirroring | Tier B removed | Build flag, off by default |
 | Background throttling breaks unfocused sessions | Core concept fails | Test in Phase 2; browser arguments; keep panels visible |
 | Beta updates change protocol | Adapter breaks | Isolated adapter, fixtures, health indicator |

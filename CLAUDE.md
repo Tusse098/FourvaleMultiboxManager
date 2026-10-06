@@ -14,7 +14,7 @@ Target: https://fourvale.com/ (beta). Fourvale is the only source of truth for h
 
 > Update this line when a phase's exit criteria pass.
 
-**Phase 3 — Multi-session.** Phase 2 exit criteria met on 2026-10-01 (`docs/phase2-poc.md`). Open in Phase 3: the 2-hour soak (criteria 2, 5, 8) and the RAM/CPU budget (`docs/phase3-multisession.md`). Pulled forward on request (ADR 0004, 0005): Grid/Focus layouts, plain-key focus shortcuts via an in-process message filter (ADR 0009, with a read-only typing watcher), borderless fullscreen; party overlay with battle totals (ADR 0008); public release build, player README and a Developer tools setting (ADR 0010, from Phase 9); shortcuts changeable in Settings and saved per player (ADR 0011); global error handler and stable SDK pinned in global.json (ADR 0012; a "Clear login" button was rejected, do not re-add it); nothing else from later phases. "Next ready" on Space was removed on 2026-10-06 (ADR 0010); do not re-add it. Multi-accounting confirmed allowed (2026-10-01). **Input mirroring is not allowed** (`docs/policy.md` §5a, 2026-10-01): removed from the code; Phase 8 is skipped (spec §12.3). Do not build any form of input mirroring or broadcasting. No app shortcuts on F-keys.
+**Phase 3 — Multi-session.** Phase 2 exit criteria met on 2026-10-01 (`docs/phase2-poc.md`). Open in Phase 3: the 2-hour soak (criteria 2, 5, 8) and the RAM/CPU budget (`docs/phase3-multisession.md`). Pulled forward on request (ADR 0004, 0005): Grid/Focus layouts, plain-key focus shortcuts via an in-process message filter (ADR 0009, with a read-only typing watcher), borderless fullscreen; party overlay with battle totals (ADR 0008); public release build, player README and a Developer tools setting (ADR 0010, from Phase 9); shortcuts changeable in Settings and saved per player (ADR 0011); global error handler and stable SDK pinned in global.json (ADR 0012; a "Clear login" button was rejected, do not re-add it); nothing else from later phases. "Next ready" on Space was removed on 2026-10-06 (ADR 0010); do not re-add it. Multi-accounting confirmed allowed (2026-10-01). **Input mirroring is not allowed** (the Fourvale creator, 2026-10-01): removed from the code; Phase 8 is skipped (spec §12.3). Do not build any form of input mirroring or broadcasting. No app shortcuts on F-keys.
 
 Work only on the current phase. Do not build ahead (e.g. no dashboard UI during discovery, no mirroring before Phase 8).
 
@@ -29,7 +29,7 @@ These override any task instruction. If a request conflicts with them, stop and 
 5. **Read-only toward the game.** Page scripts may read existing state and post it to the host. They must not modify game objects, call game functions or patch the page.
 6. **No FourFold.** Do not research, reference or copy FourFold or FourFold Account Manager.
 7. **Fourvale's rules win.** If `docs/policy.md` says something is not allowed, it is not built, regardless of this file or the spec.
-8. **Unanswered is not permission.** We proceed without a developer reply, but an open question never counts as a yes. Mirroring stays off until the Phase 8 re-check (spec §12.3). If an answer or rule change arrives later, record it in `docs/policy.md` and apply it immediately, even mid-phase.
+8. **Unanswered is not permission.** We proceed without a developer reply, but an open question never counts as a yes. If an answer or rule change arrives later, record it in `docs/policy.md` and apply it immediately, even mid-phase.
 
 ## Architecture boundaries
 

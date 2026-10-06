@@ -1,12 +1,12 @@
 # ADR 0006 — Click mirroring (Tier B) pulled forward
 
 - **Date:** 2026-10-01
-- **Status:** **Superseded and removed 2026-10-01.** Mirroring is not allowed (`docs/policy.md` §5a). All mirroring code (`MouseMirror`, `MouseHook`, `CanvasWatcher`, `DispatchMirroredMouse`), the `EnableInputMirroring` build flag, the settings section, the indicators and `start-with-mirroring.cmd` were deleted; no hidden way to re-enable it remains (spec §12.3, hard rule 7). Kept as history. Re-verified 2026-10-06: no Ctrl+click or mirroring code in the repository (ADR 0010).
+- **Status:** **Superseded and removed 2026-10-01.** Mirroring is not allowed (the Fourvale creator, 2026-10-01). All mirroring code (`MouseMirror`, `MouseHook`, `CanvasWatcher`, `DispatchMirroredMouse`), the `EnableInputMirroring` build flag, the settings section, the indicators and `start-with-mirroring.cmd` were deleted; no hidden way to re-enable it remains (spec §12.3, hard rule 7). Kept as history. Re-verified 2026-10-06: no Ctrl+click or mirroring code in the repository (ADR 0010).
 - **Phase:** pulled forward from Phase 8 into Phase 3 at the player's request.
 
 ## Context
 
-The player asked: hold Ctrl and click, and the same position (relative to each game's size) is clicked in the other slots. That is input mirroring (spec §3.2 Tier B, §12.2). Hard rule 8 kept it off until the Phase 8 re-check. Fourvale's position is still unknown: there is no published rule (F1), no answer to developer question Q3, "cheating" is undefined (G3) and bans exist (F2). The player was given three choices: ask Fourvale first (recommended), accept the risk, or drop it. The player chose to **accept the risk**, with a settings window that switches it off completely. Recorded in `docs/policy.md` §5b.
+The player asked: hold Ctrl and click, and the same position (relative to each game's size) is clicked in the other slots. That is input mirroring (spec §3.2 Tier B, §12.2). Hard rule 8 kept it off until the Phase 8 re-check. Fourvale's position is still unknown: there is no published rule (F1), no answer to developer question Q3, "cheating" is undefined (G3) and bans exist (F2). The player was given three choices: ask Fourvale first (recommended), accept the risk, or drop it. The player chose to **accept the risk**, with a settings window that switches it off completely. (That record was removed from `docs/policy.md` on 2026-10-06, after the question was settled.)
 
 ## Decision
 
@@ -34,7 +34,7 @@ Other details:
 ## Kill switch obligations (spec §12.3)
 
 - If Fourvale prohibits it, ship with the flag off and **remove** the code. Do not leave a hidden way to re-enable it.
-- Send developer question Q3 and check the Discord rules on tools and broadcasting. Record any answer in `policy.md` §5a.
+- ~~Send developer question Q3 and check the Discord rules on tools and broadcasting.~~ Settled 2026-10-01: not allowed.
 
 ## Tests
 
