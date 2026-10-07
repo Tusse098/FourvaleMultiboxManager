@@ -72,7 +72,7 @@ To remove everything, delete the app folder, `%LocalAppData%\FourvaleMultibox` a
 ## Play policy
 
 - Multi-accounting: allowed, as far as we know. Check Fourvale's own rules (for example on its Discord) yourself.
-- Input mirroring or broadcasting: **not allowed**. It is not in the app and must not be added back.
+- Input mirroring or broadcasting: **not allowed**. It is not in the app and must not be added.
 - Every feature only organises information or moves keyboard focus between your own sessions. One physical input is one action in one game client, made by you.
 
 ## Disclaimer
