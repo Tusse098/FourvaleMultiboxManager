@@ -10,6 +10,8 @@ A Windows app for playing several [Fourvale](https://fourvale.com/) accounts at 
 - **Layouts:** *Grid* (equal tiles, as large as the screen allows) and *Focus* (one large game plus small live tiles). Every game keeps running.
 - **Keyboard:** `1`–`5` focus a slot, `Alt` moves to the next slot, `Alt+Enter` toggles borderless fullscreen. All of them can be changed in Settings. Shortcuts are off while you type in chat or a login field.
 - **Party overlay:** HP, SP and the action timer of every character, on top of the game. Transparent and click-through; shown only in battle, always, or never.
+- **Enemy overlay:** the HP of each enemy in the focused slot's battle, front row first. Can be turned off in Settings.
+- **Overlay size:** each overlay has its own size slider in Settings. With *Click-through* unticked you can also drag an overlay's corner.
 
 ## Download and start
 
@@ -45,7 +47,7 @@ This is an early release. Fourvale is in beta too, and an update to the game can
 | `Alt` (tap) | Next slot |
 | `Alt+Enter` | Borderless fullscreen; touch the top edge of the screen to show the top bar |
 | **Unstick keys** | If shortcuts stop working, this resets them |
-| **Overlay** / **Settings** | Party overlay options; untick *Click-through* to drag the overlay into place |
+| **Overlay** / **Settings** | Party and enemy overlay options; untick *Click-through* to drag the overlays into place |
 
 **Change the keys** in **Settings → Keyboard**: click a shortcut, then press the new key (Esc cancels, Backspace removes it). If the key is already used, the two shortcuts swap. Your keys are saved and kept after updates; **Reset to defaults** brings back the ones above. F-keys can't be used, and the game's own keys (Q, I, C, M, Enter, Esc, Tab, arrows) need Ctrl or Alt.
 

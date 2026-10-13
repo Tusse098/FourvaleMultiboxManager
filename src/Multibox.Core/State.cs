@@ -70,7 +70,16 @@ public sealed class CharacterState
 
     /// <summary>Remaining HP of all opponents in the current battle as a share of their total (0..1).</summary>
     public Field<double>? EnemyHpFraction { get; set; }
+
+    /// <summary>
+    /// Every opponent in the current battle, in the order the game shows them: front row before back row,
+    /// top before bottom. Defeated opponents stay in the list.
+    /// </summary>
+    public Field<IReadOnlyList<EnemyState>>? Enemies { get; set; }
 }
+
+/// <summary>One opponent in a battle.</summary>
+public sealed record EnemyState(int Hp, int MaxHp, bool Alive);
 
 /// <summary>
 /// Battle results for the character in a slot since the app started (from <c>battleOver</c>, discovery C3).

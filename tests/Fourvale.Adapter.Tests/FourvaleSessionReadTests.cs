@@ -275,6 +275,129 @@ public class FourvaleSessionReadTests
         Assert.Equal(30 / 200.0, state.Character.EnemyHpFraction!.Value, 6); // 30 of 100+100 left
     }
 
+    // An enemy combatant: isPlayer 2, hp 14, maxHp 15, row 26, alive 33.
+    private static Bytes Enemy(Bytes bytes, int refId, int hp, int maxHp, string row, bool alive) => bytes
+        .Switch(refId).Raw(128 | 2).Raw(0).Raw(128 | 14).Int32(hp).Raw(128 | 15).Int32(maxHp).Raw(128 | 26).Str(row).Raw(128 | 33).Raw((byte)(alive ? 1 : 0));
+
+    // Own character, a party member, and enemies 0..3: enemy_0 in another row than "front", enemy_3 without HP fields.
+    // Only "front" has been seen in captures (discovery E3); any other row value must sort after it.
+    private static byte[] BattleWithRows(string sessionId, int frontHp)
+    {
+        var bytes = new Bytes()
+            .Raw(128 | 0).Number(1)
+            .Switch(1)
+            .Raw(128).Number(0).Str(sessionId).Number(2)
+            .Raw(128).Number(1).Str("partyMember").Number(3)
+            .Raw(128).Number(2).Str("enemy_0").Number(4)
+            .Raw(128).Number(3).Str("enemy_1").Number(5)
+            .Raw(128).Number(4).Str("enemy_2").Number(6)
+            .Raw(128).Number(5).Str("enemy_3").Number(7)
+            .Switch(2).Raw(128 | 2).Raw(1).Raw(128 | 14).Int32(80).Raw(128 | 15).Int32(80).Raw(128 | 33).Raw(1)
+            .Switch(3).Raw(128 | 2).Raw(1).Raw(128 | 14).Int32(70).Raw(128 | 15).Int32(90).Raw(128 | 33).Raw(1);
+        Enemy(bytes, 4, 50, 60, "back", alive: true);
+        Enemy(bytes, 5, frontHp, 100, "front", alive: true);
+        Enemy(bytes, 6, 0, 40, "front", alive: false);
+        return bytes.Switch(7).Raw(128 | 2).Raw(0).Raw(128 | 33).Raw(1).ToArray();
+    }
+
+    [Fact]
+    public void Enemies_are_listed_front_row_first_then_in_map_order()
+    {
+        var session = new FourvaleSession();
+        var state = new SlotState(new SlotId(1));
+        Join(session, "b1", "r1", "battle", "me1", BattleHandshake, BattleWithRows("me1", frontHp: 10));
+
+        session.ReadInto(state, T0);
+
+        var enemies = state.Character.Enemies!;
+        Assert.Equal((T0, FourvaleSession.RoomStateSource), (enemies.ConfirmedAt, enemies.Source));
+        Assert.Equal(
+            [new EnemyState(10, 100, true), new EnemyState(0, 40, false), new EnemyState(50, 60, true)], // players and the enemy without HP are left out
+            enemies.Value);
+        Assert.Equal(0, state.DecodeErrors);
+    }
+
+    // Client main-BlaLDZoY (2026-10-13): no matchmake request for the battle; the seat comes in startBattle.reservation.
+    private static void JoinByReservation(FourvaleSession session, string fromSocket, JsonObject? reservation, string socket, string roomId, byte[] state)
+    {
+        session.OnCaptured(Event(new JsonObject
+        {
+            ["kind"] = "ws", ["dir"] = "in", ["socket"] = fromSocket, ["protocol"] = "ROOM_DATA", ["type"] = "startBattle",
+            ["message"] = new JsonObject { ["nodeId"] = "bellroot_a2_dgn_b2", ["ticket"] = "<TICKET>", ["reservation"] = reservation },
+        }));
+        session.OnCaptured(Event(new JsonObject { ["kind"] = "ws_open", ["socket"] = socket, ["url"] = $"wss://api.fourvale.com/p/{roomId}" }));
+        session.OnCaptured(Event(new JsonObject { ["kind"] = "ws", ["dir"] = "in", ["socket"] = socket, ["protocol"] = "JOIN_ROOM", ["handshake"] = Convert.ToBase64String(BattleHandshake) }));
+        session.OnCaptured(Event(new JsonObject { ["kind"] = "ws", ["dir"] = "in", ["socket"] = socket, ["protocol"] = "ROOM_STATE", ["bytes"] = Convert.ToBase64String(state) }));
+    }
+
+    [Fact]
+    public void Battle_seat_comes_from_the_reservation_in_startBattle()
+    {
+        var session = new FourvaleSession();
+        var state = new SlotState(new SlotId(1));
+        Join(session, "s1", "r1", "dungeon", "me1", TownHandshake, RoomTrackerTests.TownState("me1", "scout", 7));
+        JoinByReservation(session, "s1",
+            new JsonObject { ["room"] = new JsonObject { ["roomId"] = "r2", ["name"] = "battle" }, ["sessionId"] = "me2" },
+            "b1", "r2", BattleState("me2", hp: 60, maxHp: 80, meter: 0.5));
+
+        session.ReadInto(state, T0);
+
+        Assert.Equal("reading battle room, own entry found, 2 open", session.DescribeSource());
+        Assert.True(state.Character.InBattle!.Value);
+        Assert.Equal((60, 80, 0.5), (state.Character.Hp!.Value, state.Character.MaxHp!.Value, state.Character.ActionMeter!.Value));
+    }
+
+    [Fact]
+    public void Malformed_reservation_is_ignored_without_an_error()
+    {
+        var session = new FourvaleSession();
+        var state = new SlotState(new SlotId(1));
+        Join(session, "s1", "r1", "dungeon", "me1", TownHandshake, RoomTrackerTests.TownState("me1", "scout", 7));
+        JoinByReservation(session, "s1", new JsonObject { ["room"] = "not an object", ["sessionId"] = 5 },
+            "b1", "r2", BattleState("me2", hp: 60, maxHp: 80, meter: 0.5));
+
+        session.ReadInto(state, T0);
+
+        Assert.Equal(0, session.Errors);
+        Assert.Equal("reading ? room, own entry MISSING, 2 open", session.DescribeSource()); // unknown seat: fields go UNKNOWN, nothing is guessed
+    }
+
+    [Fact]
+    public void Enemy_list_is_dropped_when_the_battle_room_is_left()
+    {
+        var session = new FourvaleSession();
+        var state = new SlotState(new SlotId(1));
+        Join(session, "s1", "r1", "town", "me1", TownHandshake, RoomTrackerTests.TownState("me1", "scout", 7));
+        Join(session, "b1", "r2", "battle", "me2", BattleHandshake, BattleWithRows("me2", frontHp: 10));
+        session.ReadInto(state, T0);
+        Assert.Equal(3, state.Character.Enemies!.Value.Count);
+        Assert.Equal("reading battle room, own entry found, 2 open", session.DescribeSource());
+
+        Close(session, "b1", leftFirst: true);
+        session.ReadInto(state, T0.AddSeconds(1));
+
+        Assert.Null(state.Character.Enemies); // not kept for the freshness limit: the town room is current again
+        Assert.Equal("reading town room, own entry found, 1 open", session.DescribeSource());
+    }
+
+    [Fact]
+    public void Each_slot_lists_only_the_enemies_of_its_own_battle()
+    {
+        var store = new StateStore();
+        var session1 = new FourvaleSession();
+        var session2 = new FourvaleSession();
+        Join(session1, "b1", "r1", "battle", "me1", BattleHandshake, BattleWithRows("me1", frontHp: 10));
+        Join(session2, "b2", "r2", "battle", "me2", BattleHandshake, BattleWithEnemies("me2"));
+
+        store.Update(new SlotId(1), s => session1.ReadInto(s, T0));
+        store.Update(new SlotId(2), s => session2.ReadInto(s, T0));
+
+        Assert.Equal(3, store.Get(new SlotId(1)).Character.Enemies!.Value.Count);
+        Assert.Equal(
+            [new EnemyState(30, 100, true), new EnemyState(0, 100, false)],
+            store.Get(new SlotId(2)).Character.Enemies!.Value);
+    }
+
     [Fact]
     public void Battle_results_add_up_per_slot()
     {

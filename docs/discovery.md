@@ -87,6 +87,28 @@ Method: capture tool with the live **Decoded state** view (player reports it "wo
 - In a party battle every member's meter then **stops for about 2 s** (attack animation): no meter patches, values unchanged, then they resume. The overlay timers pause with them.
 - So a "Space doesn't switch yet" delay after attacking is not in the game data. Most likely cause: the app's read tick lagging behind (fix: Space reads all slots before deciding, ADR 0009 update). *2026-10-06: the Space feature was removed (ADR 0010).*
 
+### 2026-10-13 — Enemy combatants and `row` (re-analysis of all seven captures, for ADR 0013)
+
+Method: `tools/Fourvale.Replay --state <seconds>` every 3 s over the seven captures of 2026-10-01; 125 samples fell inside a battle room. No new capture.
+
+| # | Finding | Confidence |
+|---|---|---|
+| E1 | **Enemies are `combatants` entries with `isPlayer = false`, keyed `enemy_0`, `enemy_1`, … in map order**, after which the players follow (keyed by sessionId). Up to 6 enemies in one battle. | High |
+| E2 | **Per-enemy HP is live:** each has `hp`, `maxHp` and `alive`; a defeated enemy stays in the map with `hp = 0`, `alive = false` until the room closes. | High |
+| E3 | **`row` is a string. Every combatant in every sample had `"front"`** (368 enemy and 207 player readings). A back-row value has not been observed, so its spelling is unknown. The adapter therefore sorts `"front"` first and every other value after it, without naming the other value. | High (`front`), not observed (back row) |
+| E4 | That map order (`enemy_0` first) is the game's top-to-bottom order on screen is **assumed, not verified**: captures hold no screen positions. To be checked by the player in a live battle, and in one with a back row. | Low until checked |
+
+### 2026-10-13 — Battle seat now arrives as a reservation (client `main-BlaLDZoY.js`)
+
+Method: the app's log (new "reading … room" lines) from live party runs at 17:43 (before the fix) and 17:48 (after), plus a static read of the public client bundle `main-BlaLDZoY.js` (`Last-Modified` 2026-10-13 13:23 UTC; the captures were made on `main-DZfOvN-x.js`). No capture of the new client yet.
+
+| # | Finding | Confidence |
+|---|---|---|
+| S1 | **The battle room is joined with a seat reservation, not a matchmake request.** The dungeon scene passes `startBattle.reservation` to the battle scene, which calls `consumeSeatReservation(reservation)`; `joinOrCreate("battle", …)` is only the fallback when there is no reservation or it fails. The Colyseus client reads `reservation.room.name`, `reservation.room.roomId`, `reservation.sessionId` (and an optional `reconnectionToken`, which our redaction removes). | High (client code); message not yet captured |
+| S2 | Effect before the fix: no `/matchmake/` response for the battle room, so its seat was unknown. Log: `reading ? room, own entry MISSING` in every battle, for both party members; town and dungeon rooms were fine. Own fields went UNKNOWN, the timer showed "not in battle", and no enemies were listed. Version 1.0.0 is affected the same way. | High (log) |
+| S3 | The town scene also accepts a `joinReservation` from a previous room's message. Town joins in the same log were still seated through matchmake. | Medium |
+| S4 | Fix: any room message carrying `reservation.room.roomId` and `reservation.sessionId` seats that room, exactly like a matchmake response. **Confirmed live at 17:48–17:49:** three battles, both party members logged `reading battle room, own entry found`, and the player reports the overlays working. The message itself has not been captured; a capture of the new `startBattle` should replace the 2026-10-01 fixture. | High (log, player) |
+
 ## Spec §17 questions
 
 | # | Question | Answer (2026-10-01) | Confidence |
@@ -172,5 +194,7 @@ Use `tools/Fourvale.Capture` (ADR 0001). Record each session here: date, slot, w
 | Currency | Yes | `/api/me` gold/silver; `battleOver.silverEach` | Login; push | Per battle | High (login), Medium (live) | |
 | Quest state | Yes | `/api/me` quests*; `/api/quest/complete` | Login; REST | Rare | Medium | |
 | Connection state | Yes | WebSocket open/close, `LEAVE_ROOM`, `/api/logout` | Network events | Event | High | Unexpected disconnect not yet observed |
+| Enemy HP / Max HP (per enemy) | Yes | `combatants[enemy_N].hp/maxHp/alive` | Schema patch per hit | Live in battle | High | E1, E2 |
+| Enemy order on screen | Partial | `combatants[enemy_N].row`, map order | Schema on join | Per battle | High (`front` first), Low (top-to-bottom, back row) | E3, E4: player check pending |
 
 The schema decoder is done (ADR 0002). Remaining gaps: cooldowns, running XP, and an unexpected disconnect.

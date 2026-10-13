@@ -25,6 +25,7 @@ public sealed class SlotSession : IDisposable
     private NetworkObserver? _observer;
     private TypingWatcher? _typing;
     private AdapterHealth? _lastHealth;
+    private string? _lastSource;
     private bool _disposed;
 
     public SlotSession(SlotId id, AppConfig config, AdapterRules rules, Redactor redactor, StateStore store, IsolationMonitor isolation, Log log)
@@ -97,6 +98,7 @@ public sealed class SlotSession : IDisposable
         core.NavigationStarting += (_, _) =>
         {
             // New page: old rooms and fields are no longer backed by anything; a new login may follow.
+            _log.Info($"{Id}: page navigation started; game data forgotten until the page is back");
             _observer?.ResetPageState();
             _session.Reset();
             _store.Reset(Id);
@@ -163,9 +165,21 @@ public sealed class SlotSession : IDisposable
             _log.Info($"{Id}: adapter health {_lastHealth?.ToString() ?? "-"} -> {state.Health}, decode errors {state.DecodeErrors}");
             _lastHealth = state.Health;
         }
+
+        // Which room the fields come from: when the overlay shows UNKNOWN, the log says why.
+        var source = _session.DescribeSource();
+        if (source != _lastSource)
+        {
+            _log.Info($"{Id}: {source}");
+            _lastSource = source;
+        }
     }
 
-    public void Reload() => View.CoreWebView2?.Reload();
+    public void Reload()
+    {
+        _log.Info($"{Id}: reload requested from the slot's reload button");
+        View.CoreWebView2?.Reload();
+    }
 
     /// <summary>Edge's browser task manager: lets the player end one slot's process to test crash recovery.</summary>
     public void OpenTaskManager() => View.CoreWebView2?.OpenTaskManagerWindow();

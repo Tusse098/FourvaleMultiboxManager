@@ -72,6 +72,21 @@ public class StateStoreTests
 
         Assert.Equal(AdapterHealth.Waiting, store.Get(new SlotId(1)).Health);
     }
+
+    [Fact]
+    public void Enemy_list_goes_unknown_when_stale_and_is_forgotten_on_reset()
+    {
+        var t0 = new DateTimeOffset(2026, 10, 13, 12, 0, 0, TimeSpan.Zero);
+        var policy = new FreshnessPolicy(new Dictionary<string, TimeSpan> { [FreshnessPolicy.DefaultKey] = TimeSpan.FromSeconds(5) });
+        var store = new StateStore();
+        store.Update(new SlotId(1), s => s.Character.Enemies = new Field<IReadOnlyList<EnemyState>>([new EnemyState(30, 100, true)], t0, "room-state"));
+
+        Assert.Equal(30, policy.Current(store.Get(new SlotId(1)).Character.Enemies, t0.AddSeconds(1))!.Value[0].Hp);
+        Assert.Null(policy.Current(store.Get(new SlotId(1)).Character.Enemies, t0.AddSeconds(6))); // battle room closed: not re-confirmed
+
+        store.Reset(new SlotId(1));
+        Assert.Null(store.Get(new SlotId(1)).Character.Enemies);
+    }
 }
 
 public class LogTests

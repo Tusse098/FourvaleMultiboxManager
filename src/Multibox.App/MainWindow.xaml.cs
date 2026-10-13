@@ -51,6 +51,9 @@ public partial class MainWindow : Window
     private readonly OverlayViewModel _overlay;
     private readonly OverlayWindow _overlayWindow;
     private OverlaySettings _overlaySettings = new();
+    private readonly EnemyOverlayViewModel _enemyOverlay;
+    private readonly EnemyOverlayWindow _enemyOverlayWindow;
+    private EnemyOverlaySettings _enemyOverlaySettings = new();
     private SettingsWindow? _settingsWindow;
     private IntPtr _hwnd;
     private bool _fullscreen;
@@ -92,6 +95,11 @@ public partial class MainWindow : Window
         _overlayWindow = new OverlayWindow(_overlay) { Owner = null };
         _overlayWindow.RowClicked += card => FocusSlot(card.Session.Id.Number);
         _overlayWindow.Moved += SaveSettings;
+        _overlayWindow.Resized += scale => _settings.ScalePercent = scale * 100;
+        _enemyOverlay = new EnemyOverlayViewModel(_config.OverlayOpacity, () => _settings.EnemyOverlay = false);
+        _enemyOverlayWindow = new EnemyOverlayWindow(_enemyOverlay) { Owner = null };
+        _enemyOverlayWindow.Moved += SaveSettings;
+        _enemyOverlayWindow.Resized += scale => _settings.EnemyScalePercent = scale * 100;
 
         DataContext = _liveState;
         _liveWindow = new LiveStateWindow(_liveState);
@@ -122,8 +130,9 @@ public partial class MainWindow : Window
         _log.Info($"app started; opening slots {string.Join(",", settings.OpenSlots)}, layout {settings.Layout}");
         _liveState.Layout = settings.Layout;
         _overlaySettings = settings.Overlay;
+        _enemyOverlaySettings = settings.EnemyOverlay;
         _overlay.IsMinimized = settings.Overlay.Minimized;
-        _settings.Load(settings.Overlay, _config.OverlayOpacity, settings.DeveloperTools);
+        _settings.Load(settings.Overlay, settings.EnemyOverlay, _config.OverlayOpacity, settings.DeveloperTools);
         if (settings.Shortcuts is { } saved)
         {
             LoadSavedShortcuts(saved);
@@ -400,7 +409,7 @@ public partial class MainWindow : Window
         _settingsWindow.Activate();
     }
 
-    // ----- Party overlay -----
+    // ----- Party and enemy overlays -----
 
     /// <summary>A Settings change: apply it to the overlay and developer tools, and save.</summary>
     private void OnSettingsChanged()
@@ -449,7 +458,18 @@ public partial class MainWindow : Window
 
         _overlay.OnlyBattleRows = _settings.OnlyBattleRows;
         _overlay.SetOpacity(_settings.OpacityPercent / 100);
+        _overlay.Scale = _settings.ScalePercent / 100;
+
+        // The enemy overlay shares click-through and background with the party overlay; its size is its own.
+        _enemyOverlayWindow.SetClickThrough(_settings.ClickThrough);
+        _enemyOverlay.Arranging = !_settings.ClickThrough;
+        _enemyOverlay.SetOpacity(_settings.OpacityPercent / 100);
+        _enemyOverlay.Scale = _settings.EnemyScalePercent / 100;
     }
+
+    /// <summary>The enemy overlay lists the focused slot's battle; no focused slot or no current list means no rows.</summary>
+    private void RefreshEnemyOverlay(DateTimeOffset now) =>
+        _enemyOverlay.Refresh(_focused is { } f && _open.TryGetValue(f, out var slot) ? _store.Get(slot.Session.Id) : null, _freshness, now);
 
     /// <summary>
     /// Off: never. Arranging (click-through off): always, so it can be moved. Otherwise always, or only while at least
@@ -462,20 +482,39 @@ public partial class MainWindow : Window
 
         if (show && !_overlayWindow.IsVisible)
         {
-            // Last place it was, if that is still on a screen; otherwise near the top-left of the work area.
-            var left = _overlaySettings.Left ?? SystemParameters.WorkArea.Left + 24;
-            var top = _overlaySettings.Top ?? SystemParameters.WorkArea.Top + 80;
-            var onScreen = left >= SystemParameters.VirtualScreenLeft - 50 && left < SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth - 50
-                           && top >= SystemParameters.VirtualScreenTop - 10 && top < SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight - 40;
-            _overlayWindow.Left = onScreen ? left : SystemParameters.WorkArea.Left + 24;
-            _overlayWindow.Top = onScreen ? top : SystemParameters.WorkArea.Top + 80;
-            _overlayWindow.Show();
+            ShowAtSavedPlace(_overlayWindow, _overlaySettings.Left, _overlaySettings.Top, SystemParameters.WorkArea.Left + 24);
         }
         else if (!show && _overlayWindow.IsVisible)
         {
             _overlaySettings = CurrentOverlaySettings();
             _overlayWindow.Hide();
         }
+
+        var showEnemies = OverlayVisibility.ShouldShowEnemies(_settings.EnemyOverlay, _settings.ClickThrough, _enemyOverlay.HasEnemies);
+        if (showEnemies && !_enemyOverlayWindow.IsVisible)
+        {
+            // First time: to the right of the party overlay, clear of it at its current size.
+            var partyLeft = _overlayWindow.IsVisible ? _overlayWindow.Left : _overlaySettings.Left ?? SystemParameters.WorkArea.Left + 24;
+            ShowAtSavedPlace(_enemyOverlayWindow, _enemyOverlaySettings.Left, _enemyOverlaySettings.Top, partyLeft + OverlayWindowBase.ContentWidth * _overlay.Scale + 12);
+        }
+        else if (!showEnemies && _enemyOverlayWindow.IsVisible)
+        {
+            _enemyOverlaySettings = CurrentEnemyOverlaySettings();
+            _enemyOverlayWindow.Hide();
+        }
+    }
+
+    /// <summary>Shows an overlay at the last place it was, if that is still on a screen; otherwise near the top-left of the work area.</summary>
+    private static void ShowAtSavedPlace(Window overlay, double? savedLeft, double? savedTop, double defaultLeft)
+    {
+        var defaultTop = SystemParameters.WorkArea.Top + 80;
+        var left = savedLeft ?? defaultLeft;
+        var top = savedTop ?? defaultTop;
+        var onScreen = left >= SystemParameters.VirtualScreenLeft - 50 && left < SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth - 50
+                       && top >= SystemParameters.VirtualScreenTop - 10 && top < SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight - 40;
+        overlay.Left = onScreen ? left : defaultLeft;
+        overlay.Top = onScreen ? top : defaultTop;
+        overlay.Show();
     }
 
     private OverlaySettings CurrentOverlaySettings() => new(
@@ -485,7 +524,14 @@ public partial class MainWindow : Window
         _settings.OpacityPercent / 100,
         _overlay.IsMinimized,
         _overlayWindow.IsVisible ? _overlayWindow.Left : _overlaySettings.Left,
-        _overlayWindow.IsVisible ? _overlayWindow.Top : _overlaySettings.Top);
+        _overlayWindow.IsVisible ? _overlayWindow.Top : _overlaySettings.Top,
+        _settings.ScalePercent / 100);
+
+    private EnemyOverlaySettings CurrentEnemyOverlaySettings() => new(
+        _settings.EnemyOverlay,
+        _settings.EnemyScalePercent / 100,
+        _enemyOverlayWindow.IsVisible ? _enemyOverlayWindow.Left : _enemyOverlaySettings.Left,
+        _enemyOverlayWindow.IsVisible ? _enemyOverlayWindow.Top : _enemyOverlaySettings.Top);
 
     // ----- Fullscreen -----
 
@@ -643,6 +689,7 @@ public partial class MainWindow : Window
         }
 
         _liveState.FocusText = _focused is { } f && _open.ContainsKey(f) ? $"▶ Slot {f}" : "";
+        RefreshEnemyOverlay(DateTimeOffset.UtcNow); // another slot's enemies must never stay under the new focus
     }
 
     /// <summary>Focus layout: make the focused slot large once focus has stayed put for focusSwapDelayMs.</summary>
@@ -698,6 +745,7 @@ public partial class MainWindow : Window
             AppSettingsStore.Save(new AppSettings(_open.Keys.ToList(), _liveState.Layout, _focused)
             {
                 Overlay = CurrentOverlaySettings(),
+                EnemyOverlay = CurrentEnemyOverlaySettings(),
                 DeveloperTools = _settings.DeveloperTools,
                 Shortcuts = _userShortcuts,
             });
@@ -791,6 +839,7 @@ public partial class MainWindow : Window
 
         _liveState.RefreshDiagnostics(_startedAt, now, _isolation.Violations, _lastMetrics);
         _overlay.Refresh();
+        RefreshEnemyOverlay(now);
         UpdateOverlayVisibility(now);
     }
 
@@ -848,6 +897,7 @@ public partial class MainWindow : Window
         _settingsWindow?.Close();
         SaveSettings();
         _overlayWindow.Close();
+        _enemyOverlayWindow.Close();
         WriteSoak();
         foreach (var slot in _open.Values)
         {

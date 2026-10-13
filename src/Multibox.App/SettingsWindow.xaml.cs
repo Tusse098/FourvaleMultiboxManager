@@ -6,13 +6,16 @@ using System.Windows.Input;
 
 namespace Multibox.App;
 
-/// <summary>Settings shown in <see cref="SettingsWindow"/>: party overlay options, shortcuts and developer tools.</summary>
+/// <summary>Settings shown in <see cref="SettingsWindow"/>: party and enemy overlay options, shortcuts and developer tools.</summary>
 public sealed class SettingsViewModel(ShortcutsViewModel shortcuts, double defaultOpacity, Action changed) : Observable
 {
     private OverlayMode _mode = OverlayMode.InBattle;
     private bool _clickThrough = true;
     private bool _onlyBattleRows;
     private double _opacityPercent = Math.Round(defaultOpacity * 100);
+    private double _scalePercent = 100;
+    private bool _enemyOverlay = true;
+    private double _enemyScalePercent = 100;
     private bool _developerTools;
 
     public ShortcutsViewModel Shortcuts { get; } = shortcuts;
@@ -46,8 +49,8 @@ public sealed class SettingsViewModel(ShortcutsViewModel shortcuts, double defau
     }
 
     public string ArrangeHint => ClickThrough
-        ? "Clicks go to the game. Untick to move the overlay."
-        : "Arranging: the overlay is shown with its header; drag it into place, then tick this again.";
+        ? "Clicks go to the game. Untick to move or resize the overlays."
+        : "Arranging: the overlays are shown with their header; drag the header to move, drag the corner to resize, then tick this again.";
 
     public bool OnlyBattleRows
     {
@@ -71,16 +74,65 @@ public sealed class SettingsViewModel(ShortcutsViewModel shortcuts, double defau
 
     public string OpacityText => string.Create(CultureInfo.CurrentCulture, $"{OpacityPercent:0}%");
 
+    /// <summary>Size of the party overlay in percent (50–200).</summary>
+    public double ScalePercent
+    {
+        get => _scalePercent;
+        set
+        {
+            if (Set(ref _scalePercent, ToScalePercent(value / 100)))
+            {
+                OnPropertyChanged(nameof(ScaleText));
+                changed();
+            }
+        }
+    }
+
+    public string ScaleText => string.Create(CultureInfo.CurrentCulture, $"{ScalePercent:0}%");
+
+    /// <summary>Show the HP of the enemies in the focused slot's battle.</summary>
+    public bool EnemyOverlay
+    {
+        get => _enemyOverlay;
+        set { if (Set(ref _enemyOverlay, value)) changed(); }
+    }
+
+    /// <summary>Size of the enemy overlay in percent (50–200).</summary>
+    public double EnemyScalePercent
+    {
+        get => _enemyScalePercent;
+        set
+        {
+            if (Set(ref _enemyScalePercent, ToScalePercent(value / 100)))
+            {
+                OnPropertyChanged(nameof(EnemyScaleText));
+                changed();
+            }
+        }
+    }
+
+    public string EnemyScaleText => string.Create(CultureInfo.CurrentCulture, $"{EnemyScalePercent:0}%");
+
     public OverlayMode Mode => _mode;
 
-    public void Load(OverlaySettings overlay, double defaultOpacity, bool developerTools)
+    private static double ToScalePercent(double scale) => Math.Round(OverlayVisibility.ClampScale(scale) * 100);
+
+    public void Load(OverlaySettings overlay, EnemyOverlaySettings enemyOverlay, double defaultOpacity, bool developerTools)
     {
         _developerTools = developerTools;
         _mode = overlay.Mode;
         _clickThrough = overlay.ClickThrough;
         _onlyBattleRows = overlay.OnlyBattleRows;
         _opacityPercent = Math.Clamp(Math.Round((overlay.Opacity ?? defaultOpacity) * 100), 20, 100);
-        foreach (var name in new[] { nameof(ShowInBattle), nameof(ShowAlways), nameof(ShowOff), nameof(ClickThrough), nameof(ArrangeHint), nameof(OnlyBattleRows), nameof(OpacityPercent), nameof(OpacityText), nameof(DeveloperTools) })
+        _scalePercent = ToScalePercent(overlay.Scale);
+        _enemyOverlay = enemyOverlay.Enabled;
+        _enemyScalePercent = ToScalePercent(enemyOverlay.Scale);
+        foreach (var name in new[]
+                 {
+                     nameof(ShowInBattle), nameof(ShowAlways), nameof(ShowOff), nameof(ClickThrough), nameof(ArrangeHint), nameof(OnlyBattleRows),
+                     nameof(OpacityPercent), nameof(OpacityText), nameof(ScalePercent), nameof(ScaleText),
+                     nameof(EnemyOverlay), nameof(EnemyScalePercent), nameof(EnemyScaleText), nameof(DeveloperTools),
+                 })
         {
             OnPropertyChanged(name);
         }

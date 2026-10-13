@@ -19,6 +19,9 @@ public sealed class FourvaleSession
     /// <summary>HP/SP from the <c>hpSync</c> message, sent once per room join.</summary>
     public const string HpSyncSource = "hpSync";
 
+    /// <summary>Combatant <c>row</c> of the front row; any other value sorts after it (discovery E3).</summary>
+    private const string FrontRow = "front";
+
     private readonly HashSet<string> _leaving = [];
     private int _unexpectedSinceRead;
     private bool _lastCloseUnexpected;
@@ -108,6 +111,18 @@ public sealed class FourvaleSession
     }
 
     public int Errors => Rooms.TotalErrors + BadRecords;
+
+    /// <summary>
+    /// For the log: the kind of room the fields are read from and whether this session's own entry is in it.
+    /// Room kinds only (town, dungeon, battle); no names, ids or values.
+    /// </summary>
+    public string DescribeSource()
+    {
+        var open = Rooms.Rooms.Count();
+        return Rooms.Current is { } room
+            ? $"reading {room.Name} room, own entry {(room.OwnEntry() is null ? "MISSING" : "found")}, {open} open"
+            : $"no room state, {open} open";
+    }
 
     /// <summary>
     /// Confirms every field that a live source currently backs. Fields with no live source keep their
@@ -226,11 +241,17 @@ public sealed class FourvaleSession
 
         if (room?.Name != "battle" || room.State?.Root.Get("combatants") is not StateCollection combatants)
         {
+            if (room is not null)
+            {
+                state.Character.Enemies = null; // back in a town or dungeon room: the battle's opponents are gone
+            }
+
             return;
         }
 
         var alive = 0;
         long hp = 0, maxHp = 0;
+        var enemies = new List<(bool Front, EnemyState Enemy)>();
         foreach (var combatant in combatants.Values.OfType<SchemaObject>())
         {
             if (combatant.Get("isPlayer") is true)
@@ -239,13 +260,23 @@ public sealed class FourvaleSession
             }
 
             maxHp += ToInt(combatant.Get("maxHp")) ?? 0;
-            if (combatant.Get("alive") is true)
+            var isAlive = combatant.Get("alive") is true;
+            if (isAlive)
             {
                 alive++;
                 hp += Math.Max(0, ToInt(combatant.Get("hp")) ?? 0);
             }
+
+            // An opponent without usable HP is left out rather than shown with a made-up value.
+            if (ToInt(combatant.Get("maxHp")) is { } enemyMaxHp and > 0 && ToInt(combatant.Get("hp")) is { } enemyHp)
+            {
+                enemies.Add((combatant.Get("row") as string == FrontRow, new EnemyState(Math.Clamp(enemyHp, 0, enemyMaxHp), enemyMaxHp, isAlive)));
+            }
         }
 
+        // Front row first; within a row the map order (enemy_0, enemy_1, …), which OrderBy keeps (discovery E1, E3).
+        state.Character.Enemies = new Field<IReadOnlyList<EnemyState>>(
+            enemies.OrderBy(e => e.Front ? 0 : 1).Select(e => e.Enemy).ToList(), now, RoomStateSource);
         state.Character.EnemiesAlive = new Field<int>(alive, now, RoomStateSource);
         if (maxHp > 0)
         {
@@ -263,6 +294,17 @@ public sealed class FourvaleSession
     private void OnIncomingFrame(JsonObject record)
     {
         var socket = (string)record["socket"]!;
+
+        // Since client main-BlaLDZoY (2026-10-13) a room can hand over the seat in the next room inside a message
+        // (startBattle.reservation) instead of a matchmake request (discovery S1). Same content: room and own sessionId.
+        if ((string?)record["protocol"] == "ROOM_DATA" && record["message"] is JsonObject data
+            && data["reservation"] is JsonObject reservation && reservation["room"] is JsonObject reserved
+            && Text(reserved["roomId"]) is { Length: > 0 } reservedRoom
+            && Text(reservation["sessionId"]) is { Length: > 0 } reservedSeat)
+        {
+            Rooms.OnMatchmake(reservedRoom, Text(reserved["name"]) ?? "?", reservedSeat);
+        }
+
         switch ((string?)record["protocol"])
         {
             case "JOIN_ROOM" when record["handshake"] is not null:
@@ -301,6 +343,8 @@ public sealed class FourvaleSession
                 break;
         }
     }
+
+    private static string? Text(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 
     // Decoded MessagePack numbers arrive as int, uint, long or double JSON values depending on their size.
     private static long? ToLong(JsonNode? node)

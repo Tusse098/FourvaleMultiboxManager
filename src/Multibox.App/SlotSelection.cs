@@ -52,12 +52,30 @@ public static class OverlayVisibility
         OverlayMode.Always => true,
         _ => anyInBattle,
     };
+
+    /// <summary>
+    /// The enemy overlay. Off: never. Arranging (click-through off): always, so it can be moved.
+    /// Otherwise only while the focused slot has current enemies to list.
+    /// </summary>
+    public static bool ShouldShowEnemies(bool enabled, bool clickThrough, bool hasEnemies) =>
+        enabled && (!clickThrough || hasEnemies);
+
+    public const double MinScale = 0.5;
+    public const double MaxScale = 2;
+
+    /// <summary>A saved overlay size, kept within what the Settings slider offers.</summary>
+    public static double ClampScale(double scale) => double.IsFinite(scale) ? Math.Clamp(scale, MinScale, MaxScale) : 1;
+
+    /// <summary>The size at which an overlay is this wide, in whole percent and within the slider's range (drag to resize).</summary>
+    public static double ScaleForWidth(double width, double widthAtNormalSize) =>
+        ClampScale(Math.Round(width / widthAtNormalSize, 2));
 }
 
 /// <summary>Party overlay options and placement (Settings window). No game data.</summary>
 /// <param name="ClickThrough">Clicks pass through the overlay to the game. Off = arrange mode: always shown, header visible, draggable.</param>
 /// <param name="OnlyBattleRows">List only characters that are in a battle.</param>
 /// <param name="Opacity">Background opacity 0.2–1; null = the default from multibox.json.</param>
+/// <param name="Scale">Size of the whole overlay, 0.5–2 (1 = normal).</param>
 public sealed record OverlaySettings(
     OverlayMode Mode = OverlayMode.InBattle,
     bool ClickThrough = true,
@@ -65,12 +83,26 @@ public sealed record OverlaySettings(
     double? Opacity = null,
     bool Minimized = false,
     double? Left = null,
+    double? Top = null,
+    double Scale = 1);
+
+/// <summary>
+/// Enemy overlay options and placement (Settings window). No game data. Click-through and background opacity
+/// are shared with the party overlay.
+/// </summary>
+/// <param name="Scale">Size of the whole overlay, 0.5–2 (1 = normal).</param>
+public sealed record EnemyOverlaySettings(
+    bool Enabled = true,
+    double Scale = 1,
+    double? Left = null,
     double? Top = null);
 
 /// <summary>Open slots, layout, focused slot and overlay placement, so the next start looks the same. No game data.</summary>
 public sealed record AppSettings(List<int> OpenSlots, PanelLayout Layout, int? FocusedSlot)
 {
     public OverlaySettings Overlay { get; init; } = new();
+
+    public EnemyOverlaySettings EnemyOverlay { get; init; } = new();
 
     /// <summary>Live state window, soak log and browser task manager, for troubleshooting. Off for normal players.</summary>
     public bool DeveloperTools { get; init; }
